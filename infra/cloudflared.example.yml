@@ -1,0 +1,11 @@
+# Replace tunnel UUID; mount its credentials JSON separately (never commit it).
+tunnel: YOUR_TUNNEL_UUID
+credentials-file: /etc/cloudflared/credentials.json
+ingress:
+  - hostname: pojav.davidhenrique.dev.br
+    service: http://web:80
+  - hostname: pojav-api.davidhenrique.dev.br
+    service: http://api:3000
+  - hostname: pojav-files.davidhenrique.dev.br
+    service: http://storage:9000
+  - service: http_status:404

@@ -1,0 +1,34 @@
+{
+  "name": "amethyst-modpack-studio",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web,worker \"npm run dev -w @studio/api\" \"npm run dev -w @studio/web\" \"npm run worker:dev -w @studio/api\"",
+    "build": "npm run build -w @studio/core && npm run build -w @studio/api && npm run build -w @studio/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "db:generate": "npm run db:generate -w @studio/api",
+    "db:migrate": "npm run db:migrate -w @studio/api",
+    "admin:create": "npm run admin:create -w @studio/api",
+    "launcher:prepare": "node scripts/prepare-launcher.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.0",
+    "concurrently": "^10.0.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.0",
+    "shell-quote": "1.11.0"
+  }
+}

@@ -119,6 +119,9 @@ export function updateDiagnostic(id: string, input: unknown) {
   return db.diagnosticReport.update({ where: { id }, data: { status } });
 }
 export async function expireDiagnostics() {
+  await db.telemetryEvent.deleteMany({
+    where: { receivedAt: { lt: new Date(Date.now() - env.DIAGNOSTIC_RETENTION_DAYS * 86400000) } },
+  });
   await db.diagnosticReport.deleteMany({
     where: { createdAt: { lt: new Date(Date.now() - env.DIAGNOSTIC_RETENTION_DAYS * 86400000) } },
   });

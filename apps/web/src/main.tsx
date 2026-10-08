@@ -18,6 +18,7 @@ import {
 } from './pages';
 import './styles.css';
 import { DownloadPage } from './download';
+import { TelemetryPage } from './telemetry';
 const SettingsContext = createContext<Settings>({
   curseforgeConfigured: false,
   buildEnabled: false,
@@ -135,6 +136,10 @@ function Session() {
               <Layers size={19} />
               Atividade
             </NavLink>
+            <NavLink to="/telemetry">
+              <Layers size={19} />
+              Telemetria
+            </NavLink>
           </nav>
           <div className="sidebar-bottom">
             <div className="android-note">
@@ -185,6 +190,7 @@ function App() {
           <Route path="imports/:id" element={<ImportReview />} />
           <Route path="launcher" element={<LauncherDashboard />} />
           <Route path="diagnostics" element={<DiagnosticsPage />} />
+          <Route path="telemetry" element={<TelemetryPage />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="*" element={<Navigate to="/catalog/modpacks" replace />} />
         </Route>

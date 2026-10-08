@@ -19,12 +19,12 @@ export async function applyOverlay(root, config) {
   await change(
     join(module, 'src/main/AndroidManifest.xml'),
     '<uses-permission android:name="android.permission.INTERNET" />',
-    '<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
+    '<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />',
   );
   await change(
     join(module, 'src/main/AndroidManifest.xml'),
     '<activity\n            android:name=".MissingStorageActivity"',
-    `<provider android:name="androidx.core.content.FileProvider" android:authorities="${config.applicationId}.studio.updates" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/studio_update_paths" /></provider>\n        <activity android:name=".studio.StudioActivity" android:exported="false" />\n        <activity\n            android:name=".MissingStorageActivity"`,
+    `<service android:name=".studio.TelemetryJobService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />\n        <provider android:name="androidx.core.content.FileProvider" android:authorities="${config.applicationId}.studio.updates" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/studio_update_paths" /></provider>\n        <activity android:name=".studio.StudioActivity" android:exported="false" />\n        <activity\n            android:name=".MissingStorageActivity"`,
   );
   await change(
     join(module, 'src/main/java/net/kdt/pojavlaunch/TestStorageActivity.java'),

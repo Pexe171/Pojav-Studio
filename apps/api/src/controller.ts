@@ -31,6 +31,7 @@ import {
   uploadKey,
 } from './services/jobs.js';
 import * as projects from './services/projects.js';
+import { listTelemetry, submitTelemetry } from './services/telemetry.js';
 import { queueLauncherBuild } from './services/android.js';
 import {
   publicCatalog,
@@ -124,6 +125,12 @@ export class ApiController {
   }
   @Get('jobs') jobs() {
     return db.job.findMany({ orderBy: { createdAt: 'desc' }, take: 50 });
+  }
+  @Post('public/telemetry') telemetry(@Body() input: unknown) {
+    return submitTelemetry(input);
+  }
+  @Get('telemetry') telemetryEvents(@Query() query: unknown) {
+    return listTelemetry(query);
   }
   @Get('jobs/:id') job(@Param('id') id: string) {
     return getJob(identifiers.parse(id));

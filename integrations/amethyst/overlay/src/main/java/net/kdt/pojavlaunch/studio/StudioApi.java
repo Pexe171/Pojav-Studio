@@ -11,6 +11,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public final class StudioApi {
+    public static final class ApiException extends IOException {
+        public final int status;
+        ApiException(int status){super("HTTP "+status);this.status=status;}
+    }
     public final String base;
     public final String name;
     public StudioApi(Context context) throws Exception {
@@ -25,6 +29,7 @@ public final class StudioApi {
     public JSONObject get(String endpoint) throws Exception {return request(endpoint,null);}
     public JSONObject getFast(String endpoint) throws Exception {return request(endpoint,null,4000);}
     public JSONObject post(String endpoint,JSONObject body) throws Exception {return request(endpoint,body);}
+    public JSONObject postFast(String endpoint,JSONObject body) throws Exception {return request(endpoint,body,5000);}
     private JSONObject request(String endpoint,JSONObject body) throws Exception {
         return request(endpoint,body,30000);
     }
@@ -35,7 +40,7 @@ public final class StudioApi {
         try {
             if(body!=null){connection.setRequestMethod("POST");connection.setDoOutput(true);connection.setRequestProperty("Content-Type","application/json; charset=utf-8");connection.setRequestProperty("x-studio-request","1");try(OutputStream output=connection.getOutputStream()){output.write(body.toString().getBytes(StandardCharsets.UTF_8));}}
             int status=connection.getResponseCode();
-            if(status<200||status>=300)throw new IOException("API indisponível: HTTP "+status);
+            if(status<200||status>=300)throw new ApiException(status);
             return new JSONObject(read(connection.getInputStream(),2097152));
         } finally { connection.disconnect(); }
     }

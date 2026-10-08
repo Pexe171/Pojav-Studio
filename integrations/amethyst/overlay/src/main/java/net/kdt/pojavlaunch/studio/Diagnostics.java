@@ -15,6 +15,7 @@ import java.util.concurrent.Executor;
 
 public final class Diagnostics {
     public static void recordGameExit(Activity activity,int code) {
+        Telemetry.gameExit(activity,code);
         if(code!=0)activity.getSharedPreferences("studio",0).edit().putInt("pendingGameExit",code).apply();
     }
     public static String redact(String text) {

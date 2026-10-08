@@ -33,3 +33,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/studio-performance-test"
           javac -d "$RUNNER_TEMP/studio-performance-test" integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/StudioPerformance.java tests/StudioPerformanceTest.java
           java -cp "$RUNNER_TEMP/studio-performance-test" net.kdt.pojavlaunch.studio.StudioPerformanceTest
+      - name: Test offline telemetry queue
+        run: |
+          mkdir -p "$RUNNER_TEMP/studio-telemetry-test"
+          javac -d "$RUNNER_TEMP/studio-telemetry-test" integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/StudioFiles.java integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/TelemetryQueue.java tests/TelemetryQueueTest.java
+          java -cp "$RUNNER_TEMP/studio-telemetry-test" net.kdt.pojavlaunch.studio.TelemetryQueueTest

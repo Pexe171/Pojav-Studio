@@ -4,6 +4,8 @@ A revisão incluiu autenticação administrativa, uploads, arquivos compactados,
 
 ## Correções aplicadas
 
+- Telemetria exige aceite no aplicativo, mantém fila privada limitada e remove credenciais reconhecidas antes de salvar/enviar. API valida esquema, datas e relação modpack/release; UUIDs tornam reenvios idempotentes. Identificação persistida no servidor usa HMAC; listagem requer administrador. Quotas por IP, aparelho, minuto e volume diário limitam abuso. Retenção padrão de 30 dias. Dados enviados por clientes não comprovam identidade. Consulte [TELEMETRY.md](TELEMETRY.md).
+
 - Login limitado por conta, IP e volume global, com contadores e expiração atômicos no Redis. Até quatro verificações de senha simultâneas por processo evitam sobrecarga. Contas inexistentes também passam por verificação de hash, com mensagem genérica. Tentativas excessivas retornam 429 e `Retry-After`.
 - Cookie de produção `__Host-studio_session`, Secure, HttpOnly, SameSite Strict, sem domínio compartilhado; proteção de origem/CSRF e respostas da API sem cache. Logout invalida a sessão.
 - Painel com CSP, HSTS, bloqueio de frames e permissões de câmera, microfone e localização desativadas.

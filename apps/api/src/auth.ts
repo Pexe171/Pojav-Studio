@@ -18,13 +18,14 @@ const tokenId = (token: string) =>
 export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest<Request>();
-    const diagnostic = req.path === '/api/v1/public/diagnostics',
+    const diagnostic =
+        req.path === '/api/v1/public/diagnostics' || req.path === '/api/v1/public/telemetry',
       auth = req.path.includes('/auth/login');
-    const key = `limit:${req.ip}:${auth ? 'login' : diagnostic ? 'diagnostic' : 'request'}`;
+    const key = `limit:${req.ip}:${auth ? 'login' : req.path === '/api/v1/public/telemetry' ? 'telemetry' : diagnostic ? 'diagnostic' : 'request'}`;
     await consumeLimit(
       redis,
       key,
-      auth ? 10 : diagnostic ? 20 : 300,
+      auth ? 10 : diagnostic ? (req.path.endsWith('/telemetry') ? 120 : 20) : 300,
       auth ? 900 : diagnostic ? 3600 : 60,
     );
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {

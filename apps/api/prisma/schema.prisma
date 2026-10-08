@@ -99,3 +99,20 @@ model Audit {
   detail Json
   createdAt DateTime @default(now())
 }
+model TelemetryEvent {
+  id String @id
+  deviceKey String
+  sessionId String
+  projectId String?
+  releaseId String?
+  kind String
+  launcherVersion String
+  device Json
+  data Json
+  log String
+  occurredAt DateTime
+  receivedAt DateTime @default(now())
+  @@index([deviceKey, occurredAt])
+  @@index([projectId, occurredAt])
+  @@index([receivedAt])
+}

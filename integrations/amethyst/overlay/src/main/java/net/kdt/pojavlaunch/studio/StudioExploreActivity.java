@@ -25,12 +25,12 @@ public final class StudioExploreActivity extends Activity {
     private volatile boolean busy;
     private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
     private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.rgb(233,226,249));t.setPadding(0,dp(7),0,dp(7));return t;}
-    private Button button(String label){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextColor(Color.WHITE);GradientDrawable bg=new GradientDrawable();bg.setColor(Color.rgb(111,60,174));bg.setCornerRadius(dp(12));b.setBackground(bg);b.setPadding(dp(12),dp(8),dp(12),dp(8));return b;}
+    private Button button(String label){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(13);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(dp(40));b.setMinimumHeight(dp(40));b.setMaxLines(2);b.setTextColor(Color.WHITE);GradientDrawable bg=new GradientDrawable();bg.setColor(Color.rgb(111,60,174));bg.setCornerRadius(dp(9));b.setBackground(bg);b.setPadding(dp(10),dp(4),dp(10),dp(4));LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-2,-2);layout.setMargins(0,dp(3),0,dp(3));b.setLayoutParams(layout);return b;}
     private EditText field(String hint){EditText e=new EditText(this);e.setSingleLine(true);e.setHint(hint);e.setTextColor(Color.WHITE);e.setHintTextColor(Color.rgb(173,160,196));return e;}
     private Spinner spinner(String[] labels){Spinner s=new Spinner(this);s.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));return s;}
     @Override public void onCreate(Bundle state){super.onCreate(state);try{api=new StudioApi(this);}catch(Exception error){finish();return;}
-        LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(20),dp(15),dp(20),dp(12));root.setBackgroundColor(Color.rgb(18,13,29));
-        root.addView(text("Explorar modpacks",28));root.addView(text("Escolha sua próxima aventura. Sua biblioteca é pessoal.",14));
+        LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(16),dp(10),dp(16),dp(8));root.setBackgroundColor(Color.rgb(18,13,29));
+        root.addView(text("Explorar modpacks",22));root.addView(text("Escolha sua próxima aventura.",13));
         query=field("Pesquisar: Cobblemon, Pixelmon...");root.addView(query);
         source=spinner(new String[]{"Todas as fontes","Modrinth","CurseForge"});loader=spinner(new String[]{"Todos os loaders","Fabric","Forge","NeoForge","Quilt"});sort=spinner(new String[]{"Populares","Atualizados","Relevância","Novos"});
         LinearLayout filters=new LinearLayout(this);filters.addView(source,new LinearLayout.LayoutParams(0,-2,1));filters.addView(loader,new LinearLayout.LayoutParams(0,-2,1));root.addView(filters);

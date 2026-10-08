@@ -1,6 +1,6 @@
 # Biblioteca pessoal
 
-No APK 1.0.13, abra **Explorar modpacks**, escolha Modrinth ou CurseForge, pesquise e selecione uma versão. **Adicionar versão** inicia a preparação em BullMQ/Redis. A biblioteca mostra o progresso e permite instalar quando a preparação termina. Esse fluxo não depende de publicação no painel administrativo.
+A partir do APK 1.0.13, abra **Explorar**, escolha Modrinth ou CurseForge, pesquise e selecione uma versão. **Adicionar versão** inicia a preparação em BullMQ/Redis. A biblioteca mostra o progresso e permite instalar quando a preparação termina. Esse fluxo não depende de publicação no painel administrativo.
 
 O tema permanece escuro e roxo. A pesquisa oferece versão do Minecraft, loader, categorias, ordenação e paginação. Os detalhes permitem abrir a página da origem. Compatibilidade declarada pelo provider não comprova funcionamento no Android.
 
@@ -14,9 +14,9 @@ São sincronizados referência do modpack e versão escolhida, nome do perfil, f
 
 ## Offline e conflitos
 
-Uma instância já instalada pode ser usada sem nossa API. A biblioteca mantém cache por conta e alterações de preferências numa fila local. Ao voltar a conexão, **Sincronizar biblioteca** envia as alterações pendentes.
+Uma instância já instalada pode ser usada sem nossa API. A biblioteca mantém cache por conta e alterações de preferências numa fila local. Ao voltar a conexão, **Mais → Sincronizar biblioteca** envia as alterações pendentes.
 
-Cada alteração inclui uma revisão. Se outro aparelho alterou o mesmo perfil, a API responde com conflito e mantém a edição pendente. **Resolver sincronização** permite usar a versão da nuvem ou reaplicar explicitamente suas alterações. Isso não altera mundos.
+Cada alteração inclui uma revisão. Se outro aparelho alterou o mesmo perfil, a API responde com conflito e mantém a edição pendente. **Mais → Resolver sincronização** permite usar a versão da nuvem ou reaplicar explicitamente suas alterações. Isso não altera mundos.
 
 Perfis publicados pelo painel e já instalados permanecem disponíveis localmente. **Salvar perfil na biblioteca** associa a release anterior à conta, sem criar outra instalação.
 

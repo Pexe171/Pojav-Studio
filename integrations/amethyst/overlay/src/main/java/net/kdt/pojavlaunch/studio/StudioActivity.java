@@ -39,24 +39,23 @@ public final class StudioActivity extends Activity {
     private final Runnable periodic=new Runnable(){public void run(){if(!installing)refresh();handler.postDelayed(this,preparing()?5000:120000);}};
     private int dp(int value){return (int)(getResources().getDisplayMetrics().density*value);}
     private TextView text(String label,int size,int color){TextView view=new TextView(this);view.setText(label);view.setTextSize(size);view.setTextColor(color);return view;}
-    private Button button(String label){Button view=new Button(this);view.setText(label);view.setAllCaps(false);view.setTextColor(Color.WHITE);android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();bg.setColor(Color.rgb(111,60,174));bg.setCornerRadius(dp(12));view.setBackground(bg);view.setPadding(dp(12),dp(8),dp(12),dp(8));return view;}
+    private Button button(String label){Button view=new Button(this);view.setText(label);view.setAllCaps(false);view.setTextSize(13);view.setMinWidth(0);view.setMinimumWidth(0);view.setMinHeight(dp(40));view.setMinimumHeight(dp(40));view.setMaxLines(2);view.setTextColor(Color.WHITE);android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();bg.setColor(Color.rgb(111,60,174));bg.setCornerRadius(dp(9));view.setBackground(bg);view.setPadding(dp(10),dp(4),dp(10),dp(4));LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-1,-2);layout.setMargins(0,dp(3),0,dp(3));view.setLayoutParams(layout);return view;}
+    private void showOptions(Button anchor){PopupMenu menu=new PopupMenu(this,anchor);String[] labels={"Sincronizar biblioteca","Conta Minecraft / launcher","Controles","Desempenho","Relatórios automáticos","Resolver sincronização"};for(int i=0;i<labels.length;i++)menu.getMenu().add(0,i,i,labels[i]);menu.setOnMenuItemClickListener(item->{switch(item.getItemId()){case 0:refresh();break;case 1:startActivity(new Intent(this,LauncherActivity.class));break;case 2:touchMode();break;case 3:performanceMode();break;case 4:Telemetry.showSettings(this);break;case 5:personal.resolve();break;default:return false;}return true;});menu.show();}
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
         try{api=new StudioApi(this);installer=new StudioInstaller(this,api);}catch(Exception e){new AlertDialog.Builder(this).setTitle("Configuração inválida").setMessage(e.getMessage()).setPositiveButton("Fechar",(d,w)->finish()).show();return;}
         personal=new StudioPersonal(this,api,jobs,()->{loadCache();render();lastRefresh=0;refresh();});
-        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(22),dp(24),dp(22),dp(12));root.setBackgroundColor(Color.rgb(16,18,27));
-        TextView title=text(api.name,28,Color.WHITE);root.addView(title);
-        TextView intro=text("Sua biblioteca. Seus perfis. Sua próxima aventura.",15,Color.rgb(183,160,215));intro.setPadding(0,dp(8),0,dp(15));root.addView(intro);
-        LinearLayout actions=new LinearLayout(this);Button refresh=button("Atualizar catálogo"),account=button("Conta / launcher"),controls=button("Controles");actions.addView(refresh);actions.addView(account);actions.addView(controls);HorizontalScrollView actionScroll=new HorizontalScrollView(this);actionScroll.addView(actions);root.addView(actionScroll);
-        refresh.setOnClickListener(v->refresh());account.setOnClickListener(v->startActivity(new Intent(this,LauncherActivity.class)));controls.setOnClickListener(v->touchMode());
-        refresh.setText("Sincronizar biblioteca");account.setText("Conta Minecraft / launcher");Button explore=button("Explorar modpacks"),myAccount=button("Minha conta"),sync=button("Resolver sincronização");actions.addView(explore,0);actions.addView(myAccount,1);actions.addView(sync);explore.setOnClickListener(v->startActivity(new Intent(this,StudioExploreActivity.class)));myAccount.setOnClickListener(v->personal.account());sync.setOnClickListener(v->personal.resolve());
-        Button performance=button("Desempenho");actions.addView(performance);performance.setOnClickListener(v->performanceMode());
-        status=text("Abrindo biblioteca local...",14,Color.rgb(180,166,223));status.setPadding(0,dp(12),0,dp(12));root.addView(status);
+        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(16),dp(12),dp(16),dp(8));root.setBackgroundColor(Color.rgb(16,18,27));
+        TextView title=text(api.name,22,Color.WHITE);root.addView(title);
+        TextView intro=text("Sua biblioteca. Seus perfis. Sua próxima aventura.",13,Color.rgb(183,160,215));intro.setPadding(0,dp(4),0,dp(8));root.addView(intro);
+        LinearLayout actions=new LinearLayout(this);Button explore=button("Explorar"),myAccount=button("Minha conta"),options=button("Mais");
+        for(Button action:new Button[]{explore,myAccount,options}){LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(0,-2,1);layout.setMargins(0,0,dp(6),0);actions.addView(action,layout);}root.addView(actions);
+        explore.setOnClickListener(v->startActivity(new Intent(this,StudioExploreActivity.class)));myAccount.setOnClickListener(v->personal.account());options.setOnClickListener(v->showOptions(options));
+        status=text("Abrindo biblioteca local...",12,Color.rgb(180,166,223));status.setPadding(0,dp(8),0,dp(8));root.addView(status);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setVisibility(android.view.View.GONE);root.addView(progress);
         ScrollView scroll=new ScrollView(this);library=new LinearLayout(this);library.setOrientation(LinearLayout.VERTICAL);scroll.addView(library);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         LauncherUpdater.register(getApplication(),api);
         Telemetry.register(getApplication(),api);Telemetry.askConsent(this);
-        Button telemetry=button("Relatórios automáticos");actions.addView(telemetry);telemetry.setOnClickListener(v->Telemetry.showSettings(this));
         loadCache();render();refresh();Diagnostics.checkSavedCrash(this,api,jobs);
     }
     @Override protected void onResume(){

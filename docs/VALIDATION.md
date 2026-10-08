@@ -4,6 +4,10 @@ Em 08/10/2026, o APK 1.0.4 foi compilado, baixado pelo Cloudflare com SHA-256 ve
 
 Resultados obtidos neste ambiente Windows com Docker Desktop Linux:
 
+- Em 08/10/2026, a página pública `/download` passou na verificação Playwright no domínio publicado em desktop e celular: links do APK corretos, sem login obrigatório, sem erro JavaScript e sem rolagem horizontal. O bloco de grama 3D respeita a preferência por movimento reduzido.
+- A resolução em lote do Pixelmon entregou 573 URLs em 9 consultas e 3.960 ms: 14 arquivos no CDN do Modrinth e 559 arquivos personalizados no armazenamento do Studio. O teste isolado confirmou deduplicação de IDs, limite de 64 itens, rejeição de arquivo de outra release e download com hash correto.
+- APK 1.0.5 compilado pelo worker e baixado pelo Cloudflare com SHA-256 `e7653fc2aef0dccf43c8d0a6e3694ac6aa531d29b128db5afac33be0586ee730`. O instalador usa quatro downloads simultâneos, reaproveita arquivos completos verificados e renova URLs quando a origem responde 401/403. O emulador permaneceu fechado a pedido do usuário; velocidade e instalação completas deste APK aguardam teste no celular.
+
 - TypeScript: API, painel e modelo compartilhado passaram.
 - Compilação de produção: API e painel passaram; imagens Docker da API e do painel foram construídas e executadas.
 - 41 testes automatizados passaram: MRPACK, overrides cliente/servidor, ambientes opcionais, hashes, manifest CurseForge, proteção contra caminhos perigosos, deduplicação, atualização com conflitos, URLs externas, filtros Modrinth, downloads negados CurseForge e seleção de runtime Java para versões antigas/atuais do Minecraft.

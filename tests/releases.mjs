@@ -13,7 +13,7 @@ const migrate = spawnSync(process.execPath, ['/app/scripts/prisma.mjs', 'migrate
 });
 if (migrate.status !== 0) throw new Error('Test migration failed');
 const { db, putObject, deleteObject, closeInfra } = await import('../apps/api/dist/infra.js');
-const { publishProject, releaseDownload, editProject } =
+const { publishProject, releaseDownload, releaseDownloads, editProject } =
   await import('../apps/api/dist/services/projects.js');
 const { bundleSchema, resolvedFileSchema } = await import('@studio/core');
 const content = Buffer.from('validated integration bytes'),
@@ -55,6 +55,22 @@ try {
   assert.equal(release.manifest.runtime, 17);
   assert.equal(release.manifest.files[0].hashes.sha256, sha256);
   const descriptor = await releaseDownload(release.id, file.id);
+  const batch = await releaseDownloads(release.id, { fileIds: [file.id, file.id] });
+  assert.equal(batch.files.length, 1);
+  assert.equal(batch.files[0].id, file.id);
+  await assert.rejects(
+    () => releaseDownloads(release.id, { fileIds: ['not-in-release'] }),
+    /Arquivo não pertence/,
+  );
+  await assert.rejects(() => releaseDownloads(release.id, { fileIds: Array(65).fill(file.id) }));
+  const batchResponse = await fetch(batch.files[0].url);
+  assert.equal(batchResponse.status, 200);
+  assert.equal(
+    createHash('sha256')
+      .update(Buffer.from(await batchResponse.arrayBuffer()))
+      .digest('hex'),
+    sha256,
+  );
   const response = await fetch(descriptor.url);
   assert.equal(response.status, 200);
   assert.equal(

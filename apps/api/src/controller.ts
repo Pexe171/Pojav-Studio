@@ -308,6 +308,12 @@ export class ApiController {
       z.string().min(1).max(512).parse(fileId),
     );
   }
+  @Post('public/releases/:id/downloads') downloads(
+    @Param('id') id: string,
+    @Body() input: unknown,
+  ) {
+    return projects.releaseDownloads(identifiers.parse(id), input);
+  }
   @Get('public/icons/:hash') async publicIcon(@Param('hash') hash: string, @Res() res: Response) {
     const digest = z
       .string()

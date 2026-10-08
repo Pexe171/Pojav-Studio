@@ -18,6 +18,8 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.*;
 
 public final class StudioInstaller {
     public interface Progress {void update(String message,int completed,int total);}
@@ -43,15 +45,15 @@ public final class StudioInstaller {
         }
         return true;
     }
-    private void download(JSONObject entry,File file) throws Exception {
+    private void download(JSONObject entry,File file,JSONObject descriptor) throws Exception {
         if(verified(file,entry))return;
-        JSONObject descriptor=api.get(entry.getString("downloadEndpoint"));URL url=new URL(descriptor.getString("url"));
+        URL url=new URL(descriptor.getString("url"));
         HttpURLConnection connection=null;
         try{
             for(int i=0;i<=5;i++){
                 if(!"https".equals(url.getProtocol())||url.getUserInfo()!=null)throw new IOException("Download exige HTTPS");
                 connection=(HttpURLConnection)url.openConnection();connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(20000);connection.setReadTimeout(60000);
-                int status=connection.getResponseCode();if(status>=300&&status<400){String next=connection.getHeaderField("Location");connection.disconnect();if(next==null||i==5)throw new IOException("Redirecionamento inválido");url=new URL(url,next);continue;}if(status!=200)throw new IOException("Download HTTP "+status);break;
+                int status=connection.getResponseCode();if((status==401||status==403)&&i==0){connection.disconnect();url=new URL(api.get(entry.getString("downloadEndpoint")).getString("url"));continue;}if(status>=300&&status<400){String next=connection.getHeaderField("Location");connection.disconnect();if(next==null||i==5)throw new IOException("Redirecionamento inválido");url=new URL(url,next);continue;}if(status!=200)throw new IOException("Download HTTP "+status);break;
             }
             if(connection==null)throw new IOException("Download indisponível");File parent=file.getParentFile();if(!parent.isDirectory()&&!parent.mkdirs())throw new IOException("Falha ao criar diretório");File partial=new File(file.getPath()+".studio-part");
             try(InputStream input=connection.getInputStream();OutputStream output=new FileOutputStream(partial)) {byte[] buffer=new byte[65536];long size=0;int count;while((count=input.read(buffer))!=-1){check();size+=count;if(size>entry.getLong("size"))throw new IOException("Arquivo maior que o manifest");output.write(buffer,0,count);}}
@@ -63,7 +65,7 @@ public final class StudioInstaller {
         if(manifest.getInt("schemaVersion")!=1||!manifest.getString("projectId").equals(card.getString("id"))||!manifest.getString("releaseId").equals(card.getString("releaseId")))throw new IOException("Manifest não corresponde ao modpack");
         File finalDir=instance(manifest.getString("projectId"),manifest.getString("releaseId"));File stage=new File(finalDir.getPath()+"-staging");if(!stage.isDirectory()&&!stage.mkdirs())throw new IOException("Falha ao criar instância");
         JSONArray files=manifest.getJSONArray("files");
-        for(int i=0;i<files.length();i++){check();JSONObject entry=files.getJSONObject(i);progress.update("Baixando "+entry.getString("path"),i,files.length());download(entry,destination(stage,entry.getString("path")));}
+        downloadFiles(manifest,stage,progress);
         int runtime=manifest.getInt("runtime");if(MultiRTUtils.getExactJreName(runtime)==null){progress.update("Preparando Java "+runtime,files.length(),files.length());boolean available=false;for(NewJREUtil.ExternalRuntime jre:NewJREUtil.ExternalRuntime.values())if(jre.majorVersion==runtime){jre.downloadRuntime(activity);available=true;break;}if(!available||MultiRTUtils.getExactJreName(runtime)==null)throw new IOException("Runtime Java indisponível");}
         JSONObject loader=manifest.getJSONObject("loader");if(!"vanilla".equals(loader.getString("type"))){ModLoader info=loader(manifest);File loaderJson=new File(Tools.DIR_HOME_VERSION,info.getVersionId()+"/"+info.getVersionId()+".json");if(!loaderJson.isFile()){
             progress.update("Preparando "+loader.getString("type"),files.length(),files.length());final Exception[] error={null};final File[] installer={null};
@@ -72,6 +74,37 @@ public final class StudioInstaller {
             if(!loaderJson.isFile())throw new IOException("Loader não foi instalado corretamente");
         }}
         progress.update("Preparando Minecraft para uso offline",files.length(),files.length());new MinecraftDownloader().prepareStudio(activity,"vanilla".equals(loader.getString("type"))?manifest.getString("minecraft"):loader(manifest).getVersionId());check();activate(manifest,stage,finalDir);return manifest;
+    }
+    private void downloadFiles(JSONObject manifest,File stage,Progress progress) throws Exception {
+        JSONArray files=manifest.getJSONArray("files");
+        List<JSONObject> missing=new ArrayList<>();Set<String> paths=new HashSet<>();
+        int reused=0;
+        for(int i=0;i<files.length();i++){
+            check();JSONObject entry=files.getJSONObject(i);File target=destination(stage,entry.getString("path"));
+            if(!paths.add(target.getCanonicalPath().toLowerCase(Locale.ROOT)))throw new IOException("Caminho duplicado no manifest");
+            progress.update("Conferindo arquivos locais",i,files.length());
+            if(verified(target,entry))reused++;else missing.add(entry);
+        }
+        Map<String,JSONObject> urls=new HashMap<>();
+        for(int offset=0;offset<missing.size();offset+=64){
+            check();progress.update("Preparando downloads diretos",reused,files.length());
+            JSONArray ids=new JSONArray();for(int i=offset;i<Math.min(offset+64,missing.size());i++)ids.put(missing.get(i).getString("id"));
+            JSONArray descriptors=api.post("/api/v1/public/releases/"+identifier(manifest.getString("releaseId"))+"/downloads",new JSONObject().put("fileIds",ids)).getJSONArray("files");
+            for(int i=0;i<descriptors.length();i++){JSONObject descriptor=descriptors.getJSONObject(i);urls.put(descriptor.getString("id"),descriptor);}
+        }
+        ExecutorService pool=Executors.newFixedThreadPool(4);
+        CompletionService<String> completed=new ExecutorCompletionService<>(pool);
+        try{
+            for(JSONObject entry:missing){JSONObject descriptor=urls.get(entry.getString("id"));if(descriptor==null)throw new IOException("URL de download ausente");
+                completed.submit(()->{check();download(entry,destination(stage,entry.getString("path")),descriptor);return entry.getString("path");});}
+            for(int i=0;i<missing.size();i++){
+                check();Future<String> next=completed.poll(1,TimeUnit.SECONDS);if(next==null){i--;continue;}
+                try{String path=next.get();progress.update("Baixando em paralelo · "+(reused+i+1)+"/"+files.length()+" · "+path,reused+i+1,files.length());}
+                catch(ExecutionException e){Throwable cause=e.getCause();if(cause instanceof Exception)throw (Exception)cause;throw new IOException(cause);}
+            }
+        }finally{
+            pool.shutdownNow();if(!pool.awaitTermination(65,TimeUnit.SECONDS))throw new IOException("Downloads ainda estão encerrando; aguarde antes de tentar novamente");
+        }
     }
     public boolean completePending() throws Exception {
         File pending=new File(activity.getFilesDir(),"studio-pending-install.json");if(!pending.isFile())return false;JSONObject manifest=new JSONObject(Tools.read(pending.getPath()));ModLoader loader=loader(manifest);File json=new File(Tools.DIR_HOME_VERSION,loader.getVersionId()+"/"+loader.getVersionId()+".json");if(!json.isFile())return false;

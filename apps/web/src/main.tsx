@@ -17,6 +17,7 @@ import {
   PerformancePage,
 } from './pages';
 import './styles.css';
+import { DownloadPage } from './download';
 const SettingsContext = createContext<Settings>({
   curseforgeConfigured: false,
   buildEnabled: false,
@@ -38,7 +39,7 @@ function Login() {
           Pojav <span>Studio</span>
         </h1>
         <p>Seu próximo modpack começa aqui.</p>
-        <a className="button secondary" href="/api/v1/public/launcher/download">
+        <a className="button secondary" href="/download">
           <Smartphone size={18} />
           Baixar launcher Android
         </a>
@@ -173,6 +174,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="download" element={<DownloadPage />} />
         <Route element={<Session />}>
           <Route index element={<Navigate to="/catalog/modpacks" replace />} />
           <Route path="catalog/modpacks" element={<Catalog />} />

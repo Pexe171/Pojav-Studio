@@ -364,6 +364,9 @@ export async function releaseDownload(releaseId: string, fileId: string) {
   const release = await db.release.findUniqueOrThrow({ where: { id: releaseId } });
   const file = bundleSchema.parse(release.bundle).files.find((f) => f.id === fileId);
   if (!file) throw new BadRequestException('Arquivo não pertence à release');
+  return resolvedDownload(file);
+}
+async function resolvedDownload(file: Bundle['files'][number]) {
   if (file.distribution === 'hosted' && file.storageKey)
     return { url: await objectUrl(file.storageKey), expiresIn: 900 };
   let url = file.downloadUrl;
@@ -373,4 +376,29 @@ export async function releaseDownload(releaseId: string, fileId: string) {
   const { safeDownloadUrl } = await import('../importer/download.js');
   await safeDownloadUrl(url);
   return { url, expiresIn: 300 };
+}
+export async function releaseDownloads(releaseId: string, input: unknown) {
+  const { fileIds } = z
+    .object({ fileIds: z.array(z.string().min(1).max(512)).min(1).max(64) })
+    .parse(input);
+  const release = await db.release.findUniqueOrThrow({ where: { id: releaseId } });
+  const available = new Map(
+    bundleSchema.parse(release.bundle).files.map((file) => [file.id, file]),
+  );
+  const selected = [...new Set(fileIds)].map((id) => {
+    const file = available.get(id);
+    if (!file) throw new BadRequestException('Arquivo não pertence à release');
+    return file;
+  });
+  const files: { id: string; url: string; expiresIn: number }[] = [];
+  let index = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(8, selected.length) }, async () => {
+      while (index < selected.length) {
+        const file = selected[index++]!;
+        files.push({ id: file.id, ...(await resolvedDownload(file)) });
+      }
+    }),
+  );
+  return { files };
 }

@@ -1,5 +1,7 @@
 # Pojav Studio
 
+A página pública de download fica em `/download`, sem exigir login, com o link para o APK mais recente. O instalador resolve URLs em lotes de até 64 arquivos e baixa até quatro arquivos em paralelo diretamente das origens; os arquivos personalizados usam o armazenamento do Studio. Arquivos completos em staging são reaproveitados após verificação de hashes e tamanho.
+
 Painel de modpacks e backend para um único launcher Android baseado no Amethyst/Pojav. Publicar uma release atualiza o catálogo do aplicativo; não gera um APK por modpack. A instalação prepara arquivos, Minecraft e runtime antes de ativar a instância, e mantém a versão anterior. Jogar uma instância instalada não depende da nossa API.
 
 ## Executar localmente

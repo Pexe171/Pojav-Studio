@@ -40,9 +40,9 @@ export async function applyOverlay(root, config) {
     join(module, 'src/main/java/net/kdt/pojavlaunch/tasks/MinecraftDownloader.java'),
     'private boolean isLocalProfile = false;',
     `private boolean isLocalProfile = false;
-    /** Prepare authenticated game assets before an instance is marked available offline. */
+    /** Prepare game assets before an instance is marked available offline. */
     public void prepareStudio(Activity activity, String versionName) throws Exception {
-        if (Tools.isLocalProfile(activity) || Tools.isDemoProfile(activity)) throw new IOException("Entre com sua conta Microsoft no launcher antes de preparar o jogo.");
+        if (Tools.isDemoProfile(activity) || net.kdt.pojavlaunch.PojavProfile.getCurrentProfileContent(activity, null) == null) throw new IOException("Selecione um perfil local ou Microsoft no launcher antes de preparar o jogo.");
         isOnline = Tools.isOnline(activity);
         if (!isOnline) throw new IOException("A primeira instalação do Minecraft precisa de internet.");
         JMinecraftVersionList versions = Tools.GLOBAL_GSON.fromJson(DownloadUtils.downloadString(LauncherPreferences.PREF_VERSION_REPOS), JMinecraftVersionList.class);
@@ -50,6 +50,39 @@ export async function applyOverlay(root, config) {
         downloadGame(activity, AsyncMinecraftDownloader.getListedVersion(versionName), versionName);
     }
 `,
+  );
+  await change(
+    join(module, 'src/main/java/net/kdt/pojavlaunch/Tools.java'),
+    '    public static boolean hasOnlineProfile(){',
+    `    public static boolean hasPlayableProfile(){
+        for (MinecraftAccount account : getAllProfiles()) {
+            if (!account.isDemo()) return true;
+        }
+        return false;
+    }
+    public static boolean hasOnlineProfile(){`,
+  );
+  await change(
+    join(module, 'src/main/java/net/kdt/pojavlaunch/Tools.java'),
+    'if (hasOnlineProfile() && !Tools.isDemoProfile(activity)){',
+    'if (hasPlayableProfile() && !Tools.isDemoProfile(activity)){',
+  );
+  for (const fragment of [
+    'MainMenuFragment',
+    'ProfileTypeSelectFragment',
+    'ModpackCreateFragment',
+  ]) {
+    const path = join(module, `src/main/java/net/kdt/pojavlaunch/fragments/${fragment}.java`);
+    const text = (await readFile(path, 'utf8')).replaceAll(
+      'hasOnlineProfile',
+      'hasPlayableProfile',
+    );
+    await writeFile(path, text);
+  }
+  await change(
+    join(module, 'src/main/java/net/kdt/pojavlaunch/tasks/MinecraftDownloader.java'),
+    'if(isLocalProfile || !isOnline) {',
+    'if(!isOnline) {',
   );
   // Keep the original crash writer and offer opt-in reports on the next library opening.
   await change(

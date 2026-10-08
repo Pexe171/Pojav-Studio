@@ -1,5 +1,7 @@
 # Validação — 7 de outubro de 2026
 
+Em 08/10/2026, o APK 1.0.4 foi compilado, baixado pelo Cloudflare com SHA-256 verificado e instalado por cima da versão anterior no BlueStacks. Com o perfil local existente, sem conta Microsoft cadastrada, o download oficial do Minecraft 26.3 iniciou e ultrapassou 110 MB de 560,48 MB. Esse teste confirma o desbloqueio do download; a conclusão da instalação e a execução dessa versão ainda não foram verificadas. SHA-256 do APK: `d022b568e5aee2af803c57d2459014b941e58446aad220e4735ed4175d7e46ac`.
+
 Resultados obtidos neste ambiente Windows com Docker Desktop Linux:
 
 - TypeScript: API, painel e modelo compartilhado passaram.

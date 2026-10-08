@@ -1,0 +1,10 @@
+ALTER TABLE "Project" ADD COLUMN "personal" BOOLEAN NOT NULL DEFAULT false;
+CREATE TABLE "Player" ("id" TEXT PRIMARY KEY, "email" TEXT, "passwordHash" TEXT, "name" TEXT NOT NULL DEFAULT 'Visitante', "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE UNIQUE INDEX "Player_email_key" ON "Player"("email");
+CREATE TABLE "PlayerSession" ("id" TEXT PRIMARY KEY, "playerId" TEXT NOT NULL REFERENCES "Player"("id") ON DELETE CASCADE, "expiresAt" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "PlayerSession_expiresAt_idx" ON "PlayerSession"("expiresAt");
+CREATE TABLE "PlayerProfile" ("id" TEXT PRIMARY KEY, "playerId" TEXT NOT NULL REFERENCES "Player"("id") ON DELETE CASCADE, "provider" TEXT NOT NULL, "externalProjectId" TEXT NOT NULL, "externalVersionId" TEXT NOT NULL, "name" TEXT NOT NULL, "icon" TEXT, "favorite" BOOLEAN NOT NULL DEFAULT false, "settings" JSONB NOT NULL, "revision" INTEGER NOT NULL DEFAULT 1, "projectId" TEXT, "jobId" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL);
+CREATE INDEX "PlayerProfile_projectId_idx" ON "PlayerProfile"("projectId");
+CREATE UNIQUE INDEX "PlayerProfile_jobId_key" ON "PlayerProfile"("jobId");
+CREATE UNIQUE INDEX "PlayerProfile_playerId_provider_externalProjectId_externalVersionId_key" ON "PlayerProfile"("playerId", "provider", "externalProjectId", "externalVersionId");
+CREATE INDEX "PlayerProfile_playerId_updatedAt_idx" ON "PlayerProfile"("playerId", "updatedAt");

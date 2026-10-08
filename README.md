@@ -4,7 +4,7 @@ O launcher oferece perfis gráficos Leve, Equilibrado e Original. Relatórios au
 
 A página pública de download fica em `/download`, sem exigir login, com o link para o APK mais recente. O instalador resolve URLs em lotes de até 64 arquivos e baixa até quatro arquivos em paralelo diretamente das origens; os arquivos personalizados usam o armazenamento do Studio. Arquivos completos em staging são reaproveitados após verificação de hashes e tamanho.
 
-Painel de modpacks e backend para um único launcher Android baseado no Amethyst/Pojav. Publicar uma release atualiza o catálogo do aplicativo; não gera um APK por modpack. A instalação prepara arquivos, Minecraft e runtime antes de ativar a instância, e mantém a versão anterior. Jogar uma instância instalada não depende da nossa API.
+Launcher Android baseado no Amethyst/Pojav com pesquisa de modpacks Modrinth e CurseForge e biblioteca pessoal. Cada jogador escolhe uma versão e prepara seu próprio perfil, sem publicação administrativa. Uma conta opcional sincroniza nomes, favoritos, versões e preferências; mundos continuam no aparelho. Consulte [biblioteca pessoal](docs/PLAYER-LIBRARY.md). O painel mantém as funções administrativas e releases anteriores. A instalação prepara arquivos, Minecraft e runtime antes de ativar a instância, e mantém a versão anterior. Jogar uma instância instalada não depende da nossa API.
 
 ## Executar localmente
 
@@ -30,7 +30,7 @@ Para executar todo o painel em Docker, use `docker compose up -d --build`; abra 
 - Modrinth consulta a API oficial e restringe pesquisas de pacotes a `project_type=modpack`.
 - CurseForge exige `CURSEFORGE_API_KEY` na configuração do servidor. A chave não é enviada ao painel ou ao APK. Downloads negados permanecem pendentes; não há tentativa de contornar permissões.
 - `.mrpack` interpreta índice, ambientes, dependências e prioridade dos overrides do cliente. Overrides de servidor não são instalados no Android. ZIP CurseForge interpreta o manifest oficial e resolve cada `projectID/fileID`.
-- Arquivos externos são baixados temporariamente, verificados por hashes e tamanho, e descartados do backend. Downloads das releases continuam pela origem. Somente arquivos locais/overrides são hospedados; a publicação exige confirmação de distribuição.
+- Importações administrativas verificam arquivos externos temporariamente e os descartam. Perfis pessoais resolvem metadados e URLs autorizadas; o celular baixa os mods diretamente da origem e verifica hashes e tamanho. O backend processa o arquivo do pacote e hospeda configurações/overrides necessários. Mods incorporados sem origem autorizada ficam bloqueados na preparação pessoal.
 - `.modpack.json` é o formato interno de metadados. Ao reimportar, blobs locais devem ser enviados novamente; o arquivo não concede acesso a objetos internos.
 - Jobs BullMQ/Redis processam a importação fora da requisição HTTP, guardam progresso e arquivos verificados para retentativas e permitem cancelar.
 - Projetos podem combinar fontes, personalizar nome/capa e adicionar/remover arquivos. Upstream é uma referência: verificar atualização e aplicar um diff são ações manuais. Conflitos exigem escolher a versão local ou upstream. Releases publicadas são imutáveis.
@@ -45,7 +45,7 @@ Testar Minecraft, loader e sua versão no Android é recomendado, mas não é um
 ANDROID_VALIDATED_TARGETS=[{"minecraft":"1.20.1","loader":"fabric","loaderVersion":"0.16.0"}]
 ```
 
-Essa lista é apenas uma referência do operador e não bloqueia a publicação. Depois de publicar, a release aparece no catálogo do aplicativo para instalação e teste.
+Essa lista é apenas uma referência do operador e não bloqueia a publicação. Os jogadores também podem pesquisar e instalar versões externas diretamente em sua biblioteca pessoal.
 
 O overlay em `integrations/amethyst/overlay` implementa biblioteca com capas persistidas, versões instaladas, atualização manual, instalação verificada em staging, rollback, cache do catálogo e controle de toque que detecta teclado físico. É possível criar um perfil local e baixar os arquivos oficiais do Minecraft sem login Microsoft. O perfil local não autentica em servidores que exigem conta original. O login Microsoft continua disponível. A biblioteca abre o perfil instalado no launcher original, onde o jogador inicia o jogo.
 

@@ -15,6 +15,7 @@ export const importRequest = z
     targetProjectId: z.string().optional(),
     revision: z.number().int().optional(),
     operation: z.enum(['prepare', 'add-mod', 'upstream', 'verify-draft']).default('prepare'),
+    verifyDownloads: z.boolean().optional(),
   })
   .superRefine((v, ctx) => {
     if (v.provider === 'local' && !v.uploadKey && !v.projectId && v.operation !== 'verify-draft')
@@ -25,8 +26,8 @@ export const importRequest = z
       ctx.addIssue({ code: 'custom', message: 'Projeto e revisão de destino necessários' });
   });
 export type ImportRequest = z.infer<typeof importRequest>;
-export async function queueImport(input: ImportRequest) {
-  const job = await db.job.create({
+export async function queueImport(input: ImportRequest, profileId?: string) {
+  const data = {
     data: {
       kind: input.operation,
       input: json(input),
@@ -38,7 +39,18 @@ export async function queueImport(input: ImportRequest) {
         message: 'Aguardando processamento',
       }),
     },
-  });
+  };
+  const job = profileId
+    ? await db.$transaction(async (tx) => {
+        const created = await tx.job.create(data);
+        const attached = await tx.playerProfile.updateMany({
+          where: { id: profileId, jobId: null },
+          data: { jobId: created.id },
+        });
+        if (!attached.count) throw new ConflictException('Perfil já está em preparação');
+        return created;
+      })
+    : await db.job.create(data);
   await imports.add(
     input.operation,
     { id: job.id },

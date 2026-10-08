@@ -192,12 +192,18 @@ export class ModrinthModpackProvider implements ModpackRepositoryProvider {
   }
   async getVersions(projectId: string, q: SearchQuery = {}): Promise<ExternalVersion[]> {
     const params = new URLSearchParams();
+    params.set('include_changelog', 'false');
     if (q.minecraft) params.set('game_versions', JSON.stringify([q.minecraft]));
     if (q.loader) params.set('loaders', JSON.stringify([q.loader]));
     return z
       .array(version)
       .parse(await this.json(`/project/${id(projectId)}/version?${params}`))
-      .map((v) => this.normalizeVersion(v));
+      .map((v) => this.normalizeVersion(v))
+      .filter(
+        (v) =>
+          (!q.minecraft || v.minecraftVersions.includes(q.minecraft)) &&
+          (!q.loader || v.loaders.includes(q.loader)),
+      );
   }
   async getVersion(projectId: string, versionId: string) {
     const v = this.normalizeVersion(await this.json(`/version/${id(versionId)}`));

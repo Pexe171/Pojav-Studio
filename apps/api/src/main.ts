@@ -41,9 +41,13 @@ class Errors implements ExceptionFilter {
         ? error.issues.map((x) => `${x.path.join('.')}: ${x.message}`).join('; ')
         : status === 500
           ? 'Falha interna ao processar a solicitação'
-          : error instanceof Error
-            ? error.message
-            : 'Requisição inválida';
+          : error instanceof Prisma.PrismaClientKnownRequestError
+            ? status === 409
+              ? 'Registro já existe'
+              : 'Registro não encontrado'
+            : error instanceof Error
+              ? error.message
+              : 'Requisição inválida';
     if (status === 500) console.error(error);
     if (status === 429 && error instanceof HttpException) {
       const detail = error.getResponse();

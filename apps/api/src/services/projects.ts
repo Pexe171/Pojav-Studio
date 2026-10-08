@@ -83,7 +83,7 @@ export async function saveRevision(
     return tx.project.findUniqueOrThrow({ where: { id: projectId } });
   });
 }
-export async function commitImport(jobId: string, input: unknown) {
+export async function commitImport(jobId: string, input: unknown, personal = false) {
   const options = commitSchema.parse(input);
   return db.$transaction(async (tx) => {
     const job = await tx.job.findUniqueOrThrow({ where: { id: jobId } });
@@ -125,6 +125,7 @@ export async function commitImport(jobId: string, input: unknown) {
     const project = await tx.project.create({
       data: {
         name: options.name,
+        personal,
         slug: `${slug}-${randomUUID().slice(0, 8)}`,
         icon: prepared.icon,
         draft: json(bundle),

@@ -10,7 +10,7 @@ import { compatible, providers, modrinth } from '../providers/registry.js';
 import { importRequest, json, type ImportRequest } from '../services/jobs.js';
 import { readArchive } from './archive.js';
 import { parseArchive, parseInternal, type ParsedPack } from './parsers.js';
-import { downloadToFile } from './download.js';
+import { downloadToFile, safeDownloadUrl } from './download.js';
 export interface PreparedImport {
   bundle: Bundle;
   importedFrom: ImportedFrom | null;
@@ -249,6 +249,7 @@ async function verifyFiles(
   jobId: string,
   result: PreparedImport,
   checkpoint: Map<string, ResolvedFile>,
+  verifyDownloads = true,
 ) {
   let index = 0;
   async function verifyOne(file: ResolvedFile) {
@@ -278,6 +279,14 @@ async function verifyFiles(
       return;
     }
     try {
+      if (!verifyDownloads) {
+        if (!Object.keys(file.hashes).length || file.size <= 0)
+          throw new Error('A origem não declarou hash e tamanho verificáveis');
+        await safeDownloadUrl(file.downloadUrl);
+        file.status = 'resolved';
+        file.issue = null;
+        return;
+      }
       const path = join(temp, randomUUID());
       const response = await downloadToFile(
         file.downloads.length ? file.downloads : [file.downloadUrl],
@@ -393,6 +402,39 @@ export async function processImport(jobId: string, retryOnFailure = false) {
       const bytes = parsed.embedded.get(file.path);
       if (bytes) {
         await checkCancelled(jobId);
+        if (input.verifyDownloads === false && file.kind === 'mod') {
+          const version = file.hashes.sha512
+            ? await modrinth.identifyHash(file.hashes.sha512).catch(() => null)
+            : null;
+          const candidates = version
+            ? await modrinth.getFiles(version.projectId, version.id).catch(() => [])
+            : [];
+          const origin = candidates.find(
+            (f) =>
+              f.downloadUrl &&
+              ((file.hashes.sha512 && f.hashes.sha512 === file.hashes.sha512) ||
+                (file.hashes.sha1 && f.hashes.sha1 === file.hashes.sha1)),
+          );
+          if (origin)
+            Object.assign(file, {
+              ...origin,
+              id: file.id,
+              path: file.path,
+              required: file.required,
+              requiredBy: file.requiredBy,
+              environment: file.environment,
+              status: 'pending',
+              storageKey: null,
+              distribution: 'origin',
+            });
+          else {
+            file.status = 'pending';
+            file.distribution = 'blocked';
+            file.storageKey = null;
+            file.issue = 'Mod incorporado sem URL de origem autorizada';
+          }
+          continue;
+        }
         const old = checkpoint.get(file.path);
         file.storageKey =
           old?.status === 'resolved' && old.storageKey && old.hashes.sha256 === file.hashes.sha256
@@ -426,7 +468,7 @@ export async function processImport(jobId: string, retryOnFailure = false) {
     bundle.warnings.push(...dedup.warnings);
     bundleSchema.parse(bundle);
     prepared.optionalFiles = bundle.files.filter((f) => !f.required).map((f) => f.id);
-    await verifyFiles(bundle, temp, jobId, prepared, checkpoint);
+    await verifyFiles(bundle, temp, jobId, prepared, checkpoint, input.verifyDownloads !== false);
     await progress(
       jobId,
       {

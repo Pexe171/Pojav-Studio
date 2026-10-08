@@ -30,10 +30,47 @@ model Project {
   upstreamSnapshot Json?
   modified Boolean @default(false)
   revision Int @default(1)
+  personal Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   releases Release[]
   revisions Revision[]
+}
+model Player {
+  id String @id @default(cuid())
+  email String? @unique
+  passwordHash String?
+  name String @default("Visitante")
+  createdAt DateTime @default(now())
+  sessions PlayerSession[]
+  profiles PlayerProfile[]
+}
+model PlayerSession {
+  id String @id
+  playerId String
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+model PlayerProfile {
+  id String @id @default(cuid())
+  playerId String
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  provider String
+  externalProjectId String
+  externalVersionId String
+  name String
+  icon String?
+  favorite Boolean @default(false)
+  settings Json
+  revision Int @default(1)
+  projectId String?
+  jobId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([playerId, provider, externalProjectId, externalVersionId])
+  @@index([playerId, updatedAt])
+  @@index([projectId])
 }
 model Revision {
   id String @id @default(cuid())

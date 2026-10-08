@@ -177,7 +177,13 @@ export class CurseForgeModpackProvider implements ModpackRepositoryProvider {
       all.push(...page.map((f) => this.normalizeVersion(f)));
       if (page.length < 50) break;
     }
-    return all.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    return all
+      .filter(
+        (v) =>
+          (!q.minecraft || v.minecraftVersions.includes(q.minecraft)) &&
+          (!q.loader || v.loaders.includes(q.loader)),
+      )
+      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
   }
   async getVersion(projectId: string, versionId: string) {
     const v = this.normalizeVersion(

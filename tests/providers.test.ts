@@ -2,6 +2,41 @@ import { it, expect, vi, afterEach } from 'vitest';
 import { ModrinthModpackProvider } from '../apps/api/src/providers/modrinth';
 import { CurseForgeModpackProvider } from '../apps/api/src/providers/curseforge';
 afterEach(() => vi.unstubAllGlobals());
+it('discards incompatible versions even when the source ignores the requested filters', async () => {
+  const values = [
+    {
+      id: 'wrong',
+      project_id: 'pack',
+      name: 'Wrong loader',
+      version_number: '1',
+      game_versions: ['1.21.1'],
+      loaders: ['neoforge'],
+      date_published: '2026-01-01T00:00:00Z',
+      files: [],
+      dependencies: [],
+    },
+    {
+      id: 'correct',
+      project_id: 'pack',
+      name: 'Fabric',
+      version_number: '2',
+      game_versions: ['1.21.1'],
+      loaders: ['fabric'],
+      date_published: '2026-01-01T00:00:00Z',
+      files: [],
+      dependencies: [],
+    },
+  ];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(JSON.stringify(values), { status: 200 })),
+  );
+  const result = await new ModrinthModpackProvider(
+    'test',
+    'https://api.modrinth.com/filter-check',
+  ).getVersions('pack', { minecraft: '1.21.1', loader: 'fabric' });
+  expect(result.map((v) => v.id)).toEqual(['correct']);
+});
 it('a pesquisa de pacotes Modrinth exige tipo modpack e combina filtros', async () => {
   const fetcher = vi.fn(
     async () => new Response(JSON.stringify({ hits: [], total_hits: 0 }), { status: 200 }),

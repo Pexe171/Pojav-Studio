@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { env } from './config.js';
 import { db, redis } from './infra.js';
 import { consumeLimit, accountLimitKey, passwordCheck } from './security.js';
+import { requirePlayer } from './services/players.js';
 const dummyPasswordHash = hash(randomBytes(32).toString('hex'));
 const sessionCookie = env.NODE_ENV === 'production' ? '__Host-studio_session' : 'studio_session';
 const tokenId = (token: string) =>
@@ -41,6 +42,18 @@ export class AuthGuard implements CanActivate {
       req.path.startsWith('/api/v1/public/')
     )
       return true;
+    if (req.path.startsWith('/api/v1/player/')) {
+      if (
+        [
+          '/api/v1/player/auth/guest',
+          '/api/v1/player/auth/register',
+          '/api/v1/player/auth/login',
+        ].includes(req.path)
+      )
+        return true;
+      await requirePlayer(req);
+      return true;
+    }
     const token = req.cookies?.[sessionCookie];
     if (typeof token !== 'string') throw new UnauthorizedException('Faça login para continuar');
     const session = await db.session.findUnique({

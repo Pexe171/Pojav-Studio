@@ -27,6 +27,7 @@ export async function publicCatalog(input: unknown) {
     })
     .parse(input);
   const where = {
+    personal: false,
     name: { contains: q.query, mode: 'insensitive' as const },
     releases: { some: {} },
   };
@@ -119,6 +120,7 @@ export function updateDiagnostic(id: string, input: unknown) {
   return db.diagnosticReport.update({ where: { id }, data: { status } });
 }
 export async function expireDiagnostics() {
+  await db.playerSession.deleteMany({ where: { expiresAt: { lt: new Date() } } });
   await db.telemetryEvent.deleteMany({
     where: { receivedAt: { lt: new Date(Date.now() - env.DIAGNOSTIC_RETENTION_DAYS * 86400000) } },
   });

@@ -50,7 +50,7 @@ function external(p: {
 export const local = new LocalModpackProvider({
   async search(q: SearchQuery) {
     const projects = await db.project.findMany({
-      where: { name: { contains: q.query ?? '', mode: 'insensitive' } },
+      where: { personal: false, name: { contains: q.query ?? '', mode: 'insensitive' } },
       orderBy: { updatedAt: 'desc' },
     });
     const filtered = projects.filter((p) => {

@@ -32,6 +32,7 @@ import {
 } from './services/jobs.js';
 import * as projects from './services/projects.js';
 import { listTelemetry, submitTelemetry } from './services/telemetry.js';
+import * as players from './services/players.js';
 import { queueLauncherBuild } from './services/android.js';
 import {
   publicCatalog,
@@ -51,6 +52,79 @@ const requiredFile = (file: Express.Multer.File | undefined) => {
 };
 @Controller('api/v1')
 export class ApiController {
+  @Post('player/auth/guest') playerGuest(@Req() req: Request) {
+    return players.guest(req);
+  }
+  @Post('player/auth/register') playerRegister(@Req() req: Request, @Body() input: unknown) {
+    return players.registerPlayer(req, input);
+  }
+  @Post('player/auth/login') playerLogin(@Req() req: Request, @Body() input: unknown) {
+    return players.loginPlayer(req, input);
+  }
+  @Post('player/auth/logout') playerLogout(@Req() req: Request) {
+    return players.logoutPlayer(req);
+  }
+  @Post('player/auth/password') playerPassword(@Req() req: Request, @Body() input: unknown) {
+    return players.changePlayerPassword(req, input);
+  }
+  @Get('player/library') playerLibrary(@Req() req: Request) {
+    return players.playerLibrary(req);
+  }
+  @Post('player/profiles') playerProfile(@Req() req: Request, @Body() input: unknown) {
+    return players.createProfile(req, input);
+  }
+  @Post('player/profiles/from-release') playerLegacy(@Req() req: Request, @Body() input: unknown) {
+    return players.attachPublicRelease(req, input);
+  }
+  @Get('player/profiles/:id') async playerProfileStatus(
+    @Req() req: Request,
+    @Param('id') id: string,
+  ) {
+    const p = await players.requirePlayer(req);
+    return players.profileCard(await players.personalProfile(p.id, id));
+  }
+  @Post('player/profiles/:id/install') playerInstall(@Req() req: Request, @Param('id') id: string) {
+    return players.installProfile(req, id);
+  }
+  @Post('player/profiles/:id/settings') playerSettings(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() input: unknown,
+  ) {
+    return players.updateProfile(req, id, input);
+  }
+  @Post('player/profiles/:id/retry') async playerRetry(
+    @Req() req: Request,
+    @Param('id') id: string,
+  ) {
+    const p = await players.requirePlayer(req);
+    const profile = await players.personalProfile(p.id, id);
+    if (!profile.jobId) throw new BadRequestException('Perfil sem job');
+    return retryJob(profile.jobId);
+  }
+  @Get('public/discover/modpacks') playerDiscover(@Req() req: Request, @Query() query: unknown) {
+    return players.discover(req, query);
+  }
+  @Get('public/discover/categories') playerCategories() {
+    return catalogCategories();
+  }
+  @Get('public/discover/:provider/:id') playerDetails(
+    @Param('provider') provider: string,
+    @Param('id') id: string,
+  ) {
+    return providers[z.enum(['modrinth', 'curseforge']).parse(provider)].getModpack(
+      identifiers.parse(id),
+    );
+  }
+  @Get('public/discover/:provider/:id/versions') playerVersions(
+    @Param('provider') provider: string,
+    @Param('id') id: string,
+    @Query() query: unknown,
+  ) {
+    return providers[z.enum(['modrinth', 'curseforge']).parse(provider)]
+      .getVersions(identifiers.parse(id), searchSchema.parse(query))
+      .then((items) => ({ items }));
+  }
   @Get('health') async health() {
     await db.$queryRaw`SELECT 1`;
     return { status: 'ok', service: 'Amethyst Studio' };
@@ -178,7 +252,7 @@ export class ApiController {
     await send();
   }
   @Get('projects') projects() {
-    return db.project.findMany({ orderBy: { updatedAt: 'desc' } });
+    return db.project.findMany({ where: { personal: false }, orderBy: { updatedAt: 'desc' } });
   }
   @Get('projects/:id') async project(@Param('id') id: string) {
     return db.project.findUniqueOrThrow({
@@ -321,30 +395,38 @@ export class ApiController {
   @Post('public/diagnostics') submitDiagnostic(@Body() input: unknown) {
     return submitDiagnostic(input);
   }
-  @Get('public/projects/:id/latest') async latest(@Param('id') id: string) {
+  @Get('public/projects/:id/latest') async latest(@Param('id') id: string, @Req() req: Request) {
     const release = await db.release.findFirstOrThrow({
       where: { projectId: identifiers.parse(id) },
       orderBy: { createdAt: 'desc' },
     });
+    await players.accessRelease(req, release.id);
     return release.manifest;
   }
-  @Get('public/releases/:id/manifest') async manifest(@Param('id') id: string) {
-    const release = await db.release.findUniqueOrThrow({ where: { id: identifiers.parse(id) } });
+  @Get('public/releases/:id/manifest') async manifest(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ) {
+    const release = await players.accessRelease(req, identifiers.parse(id));
     return release.manifest;
   }
-  @Get('public/releases/:id/files/:fileId/download') download(
+  @Get('public/releases/:id/files/:fileId/download') async download(
     @Param('id') id: string,
     @Param('fileId') fileId: string,
+    @Req() req: Request,
   ) {
+    await players.accessRelease(req, identifiers.parse(id));
     return projects.releaseDownload(
       identifiers.parse(id),
       z.string().min(1).max(512).parse(fileId),
     );
   }
-  @Post('public/releases/:id/downloads') downloads(
+  @Post('public/releases/:id/downloads') async downloads(
     @Param('id') id: string,
     @Body() input: unknown,
+    @Req() req: Request,
   ) {
+    await players.accessRelease(req, identifiers.parse(id));
     return projects.releaseDownloads(identifiers.parse(id), input);
   }
   @Get('public/icons/:hash') async publicIcon(@Param('hash') hash: string, @Res() res: Response) {

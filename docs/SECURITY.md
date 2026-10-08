@@ -4,6 +4,9 @@ A revisão incluiu autenticação administrativa, uploads, arquivos compactados,
 
 ## Correções aplicadas
 
+- Contas de jogadores são separadas das contas administrativas. Sessões usam tokens aleatórios, armazenados como HMAC no servidor e criptografados com Android Keystore no aparelho. Senhas usam Argon2; cadastro, login, pesquisa e preparação têm quotas no Redis. Troca de senha revoga todas as sessões anteriores. A conversão de visitante em conta mantém seus perfis e rejeita conversões concorrentes com token antigo.
+- Projetos pessoais são privados desde a criação. Biblioteca, perfil, manifest, resolução individual e resolução em lote verificam o proprietário. Tokens de jogador não autorizam o painel. Catálogos públicos excluem projetos pessoais, inclusive buffers de paginação manipulados. Preferências têm campos permitidos e revisão obrigatória para impedir sobrescritas silenciosas.
+
 - Telemetria exige aceite no aplicativo, mantém fila privada limitada e remove credenciais reconhecidas antes de salvar/enviar. API valida esquema, datas e relação modpack/release; UUIDs tornam reenvios idempotentes. Identificação persistida no servidor usa HMAC; listagem requer administrador. Quotas por IP, aparelho, minuto e volume diário limitam abuso. Retenção padrão de 30 dias. Dados enviados por clientes não comprovam identidade. Consulte [TELEMETRY.md](TELEMETRY.md).
 
 - Login limitado por conta, IP e volume global, com contadores e expiração atômicos no Redis. Até quatro verificações de senha simultâneas por processo evitam sobrecarga. Contas inexistentes também passam por verificação de hash, com mensagem genérica. Tentativas excessivas retornam 429 e `Retry-After`.
@@ -18,6 +21,8 @@ A revisão incluiu autenticação administrativa, uploads, arquivos compactados,
 Os critérios de autenticação seguem o [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html). As faixas especiais foram conferidas nos registros [IPv4](https://www.iana.org/assignments/iana-ipv4-special-registry) e [IPv6](https://www.iana.org/assignments/iana-ipv6-special-registry) da IANA.
 
 ## Evidências
+
+Biblioteca pessoal: 101 testes automatizados passaram; `tests/players-integration.mjs` passou em 29 verificações HTTP contra PostgreSQL/Redis reais, cobrindo isolamento entre jogadores, todos os caminhos de download privados, bloqueio administrativo, revisões, cadastro, troca de senha e revogação. O APK 1.0.13 foi compilado, assinado, baixado e teve seu hash conferido. A verificação de segredos abrangeu o código e o conteúdo descompactado do APK. A interface e o armazenamento Keystore ainda precisam de teste no celular real.
 
 `npm test`: 70 testes passaram. A integração `tests/security-integration.mjs` passou contra a API real, com PostgreSQL separado e Redis DB 15: sessão falsa, acesso sem login, CSRF, entradas de SQL/NoSQL, limite por conta, concorrência, logout, uploads inválidos e endpoint público de versão. Nenhum administrador ou modpack de produção foi alterado por esse teste.
 

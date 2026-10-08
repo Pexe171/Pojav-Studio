@@ -25,9 +25,10 @@ const cursorSchema = z.object({
     .max(144)
     .default([]),
 });
-export async function searchCatalog(input: unknown) {
+export async function searchCatalog(input: unknown, externalOnly = false) {
   const q = searchSchema.parse(input);
   const signature = JSON.stringify([
+    externalOnly,
     q.query,
     q.minecraft,
     q.loader,
@@ -53,10 +54,13 @@ export async function searchCatalog(input: unknown) {
         : ['modrinth', 'curseforge', 'local']
       : [q.provider];
   if (q.category?.includes(':')) sources = sources.filter((p) => q.category!.startsWith(`${p}:`));
+  if (externalOnly) sources = sources.filter((p) => p !== 'local');
   const issues: { provider: Provider; message: string }[] = [];
   // Buffered cards are fetched again through providers; untrusted cursors never carry rendered metadata.
   const buffered = await Promise.allSettled(
-    state.buffer.map((r) => providers[r.provider].getModpack(r.externalProjectId)),
+    state.buffer
+      .filter((r) => sources.includes(r.provider))
+      .map((r) => providers[r.provider].getModpack(r.externalProjectId)),
   );
   const items: ExternalProject[] = [];
   for (const result of buffered) if (result.status === 'fulfilled') items.push(result.value);

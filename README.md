@@ -33,7 +33,7 @@ Para executar todo o painel em Docker, use `docker compose up -d --build`; abra 
 
 ## Desempenho e Android
 
-Mods de desempenho são **sugestões com instalação manual**, conforme a preferência escolhida. Não há instalação automática de Sodium, OptiFine ou outros mods. Compatibilidade com Minecraft/loader não equivale a compatibilidade com Android. Sodium informa que Android não é oficialmente suportado; teste o renderizador e evite combinar renderizadores concorrentes. Um perfil gráfico conservador separado pode ser ativado manualmente.
+Mods de desempenho são **sugestões com instalação manual**, conforme a preferência escolhida. Não há instalação automática de Sodium, OptiFine ou outros mods. Compatibilidade com Minecraft/loader não equivale a compatibilidade com Android. [Sodium](https://modrinth.com/mod/sodium) informa que Android não é oficialmente suportado; teste o renderizador e evite combinar renderizadores concorrentes. Um perfil gráfico conservador separado pode ser ativado manualmente.
 
 `ANDROID_VALIDATED_TARGETS` começa vazio. Depois de testar Minecraft, loader e sua versão em um aparelho, registre a combinação, por exemplo:
 
@@ -48,6 +48,8 @@ O overlay em `integrations/amethyst/overlay` implementa biblioteca com capas per
 Erros oferecem uma prévia e perguntam antes do envio. O relatório usa `POST /api/v1/public/diagnostics`, exige `consent:true` e remove tokens, emails e caminhos pessoais. Logs podem conter outros dados: o jogador pode recusar. O painel mostra relatórios revisados/resolvidos, com retenção configurável, padrão 30 dias.
 
 ## APK único
+
+O instalador inicial foi compilado e assinado. Na implantação deste projeto, o download permanente é [Baixar Pojav Studio](https://pojav.davidhenrique.dev.br/api/v1/public/launcher/download); o backend redireciona para uma URL assinada temporária do APK mais recente. Não é um APK por modpack.
 
 O source do launcher é fixado por commit em `integrations/amethyst/launcher.lock.json`. `npm run launcher:prepare` busca o checkout e os submódulos sem modificar fontes existentes. A imagem `infra/Dockerfile.android` fornece JDK, SDK/NDK, Node e Gradle; a geração ocorre em worker separado.
 
@@ -64,10 +66,10 @@ Defina `BUILD_ENABLED=true` também na API e reinicie-a para habilitar o botão 
 
 Os exemplos de produção usam:
 
-| Serviço | Endereço |
-| --- | --- |
-| Painel | `pojav.davidhenrique.dev.br` |
-| API do launcher | `pojav-api.davidhenrique.dev.br` |
+| Serviço          | Endereço                           |
+| ---------------- | ---------------------------------- |
+| Painel           | `pojav.davidhenrique.dev.br`       |
+| API do launcher  | `pojav-api.davidhenrique.dev.br`   |
 | Objetos próprios | `pojav-files.davidhenrique.dev.br` |
 
 Use `.env.production.example` como referência, mantendo os segredos reais apenas em `.env`. PostgreSQL, Redis e SeaweedFS ficam na rede interna em produção. O armazenamento S3 usa URLs assinadas e buckets privados.

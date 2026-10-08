@@ -7,17 +7,29 @@ services:
       POSTGRES_USER: studio
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-studio_dev_password}
     volumes: [postgres-data:/var/lib/postgresql/data]
-    healthcheck: {test: [CMD-SHELL, "pg_isready -U studio -d studio"], interval: 5s, timeout: 5s, retries: 20}
+    healthcheck:
+      {
+        test: [CMD-SHELL, 'pg_isready -U studio -d studio'],
+        interval: 5s,
+        timeout: 5s,
+        retries: 20,
+      }
     restart: unless-stopped
   redis:
     image: redis:7-alpine
     command: [redis-server, --appendonly, 'yes']
     volumes: [redis-data:/data]
-    healthcheck: {test: [CMD, redis-cli, ping], interval: 5s, timeout: 5s, retries: 20}
+    healthcheck: { test: [CMD, redis-cli, ping], interval: 5s, timeout: 5s, retries: 20 }
     restart: unless-stopped
   storage:
     image: chrislusf/seaweedfs:4.48
-    command: [mini, '-dir=/data', '-s3.port=9000', '-s3.externalUrl=${PUBLIC_STORAGE_ENDPOINT:-http://localhost:9000}']
+    command:
+      [
+        mini,
+        '-dir=/data',
+        '-s3.port=9000',
+        '-s3.externalUrl=${PUBLIC_STORAGE_ENDPOINT:-http://localhost:9000}',
+      ]
     environment:
       AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:-studio}
       AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:-studio_dev_storage_password}
@@ -25,7 +37,7 @@ services:
     volumes: [storage-data:/data]
     restart: unless-stopped
   api:
-    build: {context: ., dockerfile: infra/Dockerfile.api}
+    build: { context: ., dockerfile: infra/Dockerfile.api }
     env_file: .env
     environment:
       DATABASE_URL: postgresql://studio:${POSTGRES_PASSWORD:-studio_dev_password}@postgres:5432/studio
@@ -33,12 +45,12 @@ services:
       STORAGE_ENDPOINT: http://storage:9000
     command: [sh, -c, 'npm run db:migrate && npm run start -w @studio/api']
     depends_on:
-      postgres: {condition: service_healthy}
-      redis: {condition: service_healthy}
-      storage: {condition: service_started}
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      storage: { condition: service_started }
     restart: unless-stopped
   worker:
-    build: {context: ., dockerfile: infra/Dockerfile.api}
+    build: { context: ., dockerfile: infra/Dockerfile.api }
     env_file: .env
     environment:
       DATABASE_URL: postgresql://studio:${POSTGRES_PASSWORD:-studio_dev_password}@postgres:5432/studio
@@ -49,14 +61,14 @@ services:
     depends_on: [api]
     restart: unless-stopped
   web:
-    build: {context: ., dockerfile: infra/Dockerfile.web}
+    build: { context: ., dockerfile: infra/Dockerfile.web }
     ports: ['${WEB_PORT:-8080}:80']
     depends_on: [api]
     restart: unless-stopped
   android-worker:
     profiles: [android]
     image: pojav-studio-android-worker:latest
-    build: {context: ., dockerfile: infra/Dockerfile.android}
+    build: { context: ., dockerfile: infra/Dockerfile.android }
     env_file: .env
     environment:
       DATABASE_URL: postgresql://studio:${POSTGRES_PASSWORD:-studio_dev_password}@postgres:5432/studio

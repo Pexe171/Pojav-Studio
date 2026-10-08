@@ -1,0 +1,8 @@
+node_modules
+dist
+.data
+vendor
+artifacts
+package-lock.json
+integrations/amethyst/LICENSE
+apps/api/prisma/migrations

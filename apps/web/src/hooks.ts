@@ -1,5 +1,68 @@
-import { useEffect,useState,useCallback } from 'react';
-import { api,type Job } from './api';
-export function useResource<T>(path:string|null){const [data,setData]=useState<T|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[revision,setRevision]=useState(0);const reload=useCallback(()=>setRevision(n=>n+1),[]);
-  useEffect(()=>{if(!path){setLoading(false);return;}const controller=new AbortController();setLoading(true);setError('');api<T>(path,{signal:controller.signal}).then(setData).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});return ()=>controller.abort();},[path,revision]);return {data,error,loading,reload,setData};}
-export function useJob(id:string|undefined){const [job,setJob]=useState<Job|null>(null),[error,setError]=useState('');useEffect(()=>{if(!id)return;let disposed=false,terminal=false;const source=new EventSource(`/api/v1/jobs/${id}/events`,{withCredentials:true});const receive=(value:Job)=>{if(disposed)return;setJob(value);setError('');terminal=['ready','committed','failed','cancelled'].includes(value.status);if(terminal)source.close();};source.onmessage=event=>{try{receive(JSON.parse(event.data) as Job);}catch{setError('Progresso inválido');}};const fetchJob=()=>api<Job>(`/jobs/${id}`).then(receive).catch(e=>{if(!disposed)setError(e.message);});void fetchJob();const timer=setInterval(()=>{if(!terminal)void fetchJob();},3000);return ()=>{disposed=true;source.close();clearInterval(timer);};},[id]);return {job,error};}
+import { useEffect, useState, useCallback } from 'react';
+import { api, type Job } from './api';
+export function useResource<T>(path: string | null) {
+  const [data, setData] = useState<T | null>(null),
+    [error, setError] = useState(''),
+    [loading, setLoading] = useState(true),
+    [revision, setRevision] = useState(0);
+  const reload = useCallback(() => setRevision((n) => n + 1), []);
+  useEffect(() => {
+    if (!path) {
+      setLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    api<T>(path, { signal: controller.signal })
+      .then(setData)
+      .catch((e) => {
+        if (!controller.signal.aborted) setError(e.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [path, revision]);
+  return { data, error, loading, reload, setData };
+}
+export function useJob(id: string | undefined) {
+  const [job, setJob] = useState<Job | null>(null),
+    [error, setError] = useState('');
+  useEffect(() => {
+    if (!id) return;
+    let disposed = false,
+      terminal = false;
+    const source = new EventSource(`/api/v1/jobs/${id}/events`, { withCredentials: true });
+    const receive = (value: Job) => {
+      if (disposed) return;
+      setJob(value);
+      setError('');
+      terminal = ['ready', 'committed', 'failed', 'cancelled'].includes(value.status);
+      if (terminal) source.close();
+    };
+    source.onmessage = (event) => {
+      try {
+        receive(JSON.parse(event.data) as Job);
+      } catch {
+        setError('Progresso inválido');
+      }
+    };
+    const fetchJob = () =>
+      api<Job>(`/jobs/${id}`)
+        .then(receive)
+        .catch((e) => {
+          if (!disposed) setError(e.message);
+        });
+    void fetchJob();
+    const timer = setInterval(() => {
+      if (!terminal) void fetchJob();
+    }, 3000);
+    return () => {
+      disposed = true;
+      source.close();
+      clearInterval(timer);
+    };
+  }, [id]);
+  return { job, error };
+}

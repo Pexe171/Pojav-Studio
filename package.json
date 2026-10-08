@@ -17,12 +17,15 @@
     "db:generate": "npm run db:generate -w @studio/api",
     "db:migrate": "npm run db:migrate -w @studio/api",
     "admin:create": "npm run admin:create -w @studio/api",
-    "launcher:prepare": "node scripts/prepare-launcher.mjs"
+    "launcher:prepare": "node scripts/prepare-launcher.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.10.0",
     "concurrently": "^10.0.5",
+    "prettier": "^3.9.9",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"

@@ -5,10 +5,187 @@ import { db } from '../infra.js';
 import { env } from '../config.js';
 import { json } from './jobs.js';
 import { modrinth } from '../providers/registry.js';
-export function redactDiagnostic(text:string){return text.replace(/(Bearer\s+)[A-Za-z0-9._~+\/-]+/gi,'$1[REDACTED]').replace(/((?:access[_-]?token|refresh[_-]?token|client[_-]?secret|password|authorization|x-api-key|session[_-]?id|--accessToken)["'\s:=]+)[^\s,"';&]+/gi,'$1[REDACTED]').replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g,'[EMAIL]').replace(/(?:\/storage\/emulated\/\d+|\/data\/user\/\d+\/[^\s/]+|[A-Z]:\\Users\\[^\\\s]+)/gi,'[LOCAL_PATH]');}
-export async function publicCatalog(input:unknown){const q=z.object({query:z.string().max(200).default(''),offset:z.coerce.number().int().min(0).max(100000).default(0),limit:z.coerce.number().int().min(1).max(100).default(50)}).parse(input);const where={name:{contains:q.query,mode:'insensitive' as const},releases:{some:{}}};const [projects,total]=await Promise.all([db.project.findMany({where,skip:q.offset,take:q.limit,orderBy:{updatedAt:'desc'},include:{releases:{orderBy:{createdAt:'desc'},take:1}}}),db.project.count({where})]);return {schemaVersion:1,items:projects.map(p=>{const r=p.releases[0]!,b=bundleSchema.parse(r.bundle);return {id:p.id,name:p.name,icon:p.icon,version:r.version,releaseId:r.id,minecraft:b.minecraft,loader:b.loader,modCount:b.files.filter(f=>f.kind==='mod').length,size:b.files.reduce((n,f)=>n+f.size,0),updatedAt:r.createdAt.toISOString(),manifestEndpoint:`/api/v1/public/releases/${r.id}/manifest`,performance:b.performance};}),total,nextOffset:q.offset+projects.length<total?q.offset+projects.length:null};}
-export async function submitDiagnostic(input:unknown){const report=z.object({consent:z.literal(true),projectId:z.string().max(100).optional(),releaseId:z.string().max(100).optional(),kind:z.enum(['launcher-crash','game-crash','installation','runtime','other']),launcherVersion:z.string().min(1).max(100),device:z.object({model:z.string().max(100),android:z.string().max(30),architecture:z.string().max(40).optional(),renderer:z.string().max(100).optional()}),message:z.string().min(1).max(2000),log:z.string().max(524288)}).parse(input);if(report.releaseId){const release=await db.release.findUnique({where:{id:report.releaseId}});if(!release||report.projectId&&report.projectId!==release.projectId)throw new BadRequestException('Release inválida no relatório');}const saved=await db.diagnosticReport.create({data:{projectId:report.projectId,releaseId:report.releaseId,kind:report.kind,launcherVersion:report.launcherVersion,device:json(report.device),message:redactDiagnostic(report.message),log:redactDiagnostic(report.log)}});return {id:saved.id,received:true};}
-export function listDiagnostics(input:unknown){const q=z.object({status:z.enum(['new','reviewed','resolved']).optional(),offset:z.coerce.number().int().min(0).default(0)}).parse(input);return db.diagnosticReport.findMany({where:{status:q.status},orderBy:{createdAt:'desc'},skip:q.offset,take:50});}
-export function updateDiagnostic(id:string,input:unknown){const {status}=z.object({status:z.enum(['new','reviewed','resolved'])}).parse(input);return db.diagnosticReport.update({where:{id},data:{status}});}
-export async function expireDiagnostics(){await db.diagnosticReport.deleteMany({where:{createdAt:{lt:new Date(Date.now()-env.DIAGNOSTIC_RETENTION_DAYS*86400000)}}});await db.session.deleteMany({where:{expiresAt:{lt:new Date()}}});}
-export async function performanceSuggestions(projectId:string){const project=await db.project.findUniqueOrThrow({where:{id:projectId}}),bundle=bundleSchema.parse(project.draft);const suggestions=[{slug:'ferrite-core',purpose:'Redução de uso de memória',warning:null},{slug:'lithium',purpose:'Otimização da simulação do jogo',warning:null},{slug:'modernfix',purpose:'Inicialização e uso de memória',warning:null},{slug:'entityculling',purpose:'Reduzir renderização de entidades ocultas',warning:'Verifique o renderizador e teste no aparelho.'},{slug:'sodium',purpose:'Substituição do renderizador',warning:'Sem suporte oficial a Android. Exige validação específica do renderizador. Não combinar com OptiFine ou Embeddium.'},{slug:'embeddium',purpose:'Renderização otimizada para Forge',warning:'Exige validação no aparelho. Não combinar com Sodium ou OptiFine.'}];const results=await Promise.allSettled(suggestions.map(async s=>{const p=await modrinth.getModpack(s.slug);const versions=await modrinth.getVersions(p.externalProjectId,{minecraft:bundle.minecraft,loader:bundle.loader.type});if(!versions.length)return null;const present=bundle.files.some(f=>f.provider==='modrinth'&&f.projectId===p.externalProjectId||f.filename.toLowerCase().includes(s.slug.replace('-','')));const approved=env.PERFORMANCE_APPROVED_MODS.some(a=>a.projectId===p.externalProjectId&&a.versionId===versions[0]!.id&&a.minecraft===bundle.minecraft&&a.loader===bundle.loader.type);return {project:p,version:versions[0]!,purpose:s.purpose,warning:s.warning,present,androidValidated:approved};}));return {items:results.flatMap(r=>r.status==='fulfilled'&&r.value?[r.value]:[]),manualOnly:true,optifine:{name:'OptiFine',websiteUrl:'https://optifine.net/downloads',warning:'Importação manual a partir da origem, respeitando licença e compatibilidade; não combinar com Sodium/Embeddium.'}};}
+export function redactDiagnostic(text: string) {
+  return text
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+\/-]+/gi, '$1[REDACTED]')
+    .replace(
+      /((?:access[_-]?token|refresh[_-]?token|client[_-]?secret|password|authorization|x-api-key|session[_-]?id|--accessToken)["'\s:=]+)[^\s,"';&]+/gi,
+      '$1[REDACTED]',
+    )
+    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[EMAIL]')
+    .replace(
+      /(?:\/storage\/emulated\/\d+|\/data\/user\/\d+\/[^\s/]+|[A-Z]:\\Users\\[^\\\s]+)/gi,
+      '[LOCAL_PATH]',
+    );
+}
+export async function publicCatalog(input: unknown) {
+  const q = z
+    .object({
+      query: z.string().max(200).default(''),
+      offset: z.coerce.number().int().min(0).max(100000).default(0),
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+    })
+    .parse(input);
+  const where = {
+    name: { contains: q.query, mode: 'insensitive' as const },
+    releases: { some: {} },
+  };
+  const [projects, total] = await Promise.all([
+    db.project.findMany({
+      where,
+      skip: q.offset,
+      take: q.limit,
+      orderBy: { updatedAt: 'desc' },
+      include: { releases: { orderBy: { createdAt: 'desc' }, take: 1 } },
+    }),
+    db.project.count({ where }),
+  ]);
+  return {
+    schemaVersion: 1,
+    items: projects.map((p) => {
+      const r = p.releases[0]!,
+        b = bundleSchema.parse(r.bundle);
+      return {
+        id: p.id,
+        name: p.name,
+        icon: p.icon,
+        version: r.version,
+        releaseId: r.id,
+        minecraft: b.minecraft,
+        loader: b.loader,
+        modCount: b.files.filter((f) => f.kind === 'mod').length,
+        size: b.files.reduce((n, f) => n + f.size, 0),
+        updatedAt: r.createdAt.toISOString(),
+        manifestEndpoint: `/api/v1/public/releases/${r.id}/manifest`,
+        performance: b.performance,
+      };
+    }),
+    total,
+    nextOffset: q.offset + projects.length < total ? q.offset + projects.length : null,
+  };
+}
+export async function submitDiagnostic(input: unknown) {
+  const report = z
+    .object({
+      consent: z.literal(true),
+      projectId: z.string().max(100).optional(),
+      releaseId: z.string().max(100).optional(),
+      kind: z.enum(['launcher-crash', 'game-crash', 'installation', 'runtime', 'other']),
+      launcherVersion: z.string().min(1).max(100),
+      device: z.object({
+        model: z.string().max(100),
+        android: z.string().max(30),
+        architecture: z.string().max(40).optional(),
+        renderer: z.string().max(100).optional(),
+      }),
+      message: z.string().min(1).max(2000),
+      log: z.string().max(524288),
+    })
+    .parse(input);
+  if (report.releaseId) {
+    const release = await db.release.findUnique({ where: { id: report.releaseId } });
+    if (!release || (report.projectId && report.projectId !== release.projectId))
+      throw new BadRequestException('Release inválida no relatório');
+  }
+  const saved = await db.diagnosticReport.create({
+    data: {
+      projectId: report.projectId,
+      releaseId: report.releaseId,
+      kind: report.kind,
+      launcherVersion: report.launcherVersion,
+      device: json(report.device),
+      message: redactDiagnostic(report.message),
+      log: redactDiagnostic(report.log),
+    },
+  });
+  return { id: saved.id, received: true };
+}
+export function listDiagnostics(input: unknown) {
+  const q = z
+    .object({
+      status: z.enum(['new', 'reviewed', 'resolved']).optional(),
+      offset: z.coerce.number().int().min(0).default(0),
+    })
+    .parse(input);
+  return db.diagnosticReport.findMany({
+    where: { status: q.status },
+    orderBy: { createdAt: 'desc' },
+    skip: q.offset,
+    take: 50,
+  });
+}
+export function updateDiagnostic(id: string, input: unknown) {
+  const { status } = z.object({ status: z.enum(['new', 'reviewed', 'resolved']) }).parse(input);
+  return db.diagnosticReport.update({ where: { id }, data: { status } });
+}
+export async function expireDiagnostics() {
+  await db.diagnosticReport.deleteMany({
+    where: { createdAt: { lt: new Date(Date.now() - env.DIAGNOSTIC_RETENTION_DAYS * 86400000) } },
+  });
+  await db.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+}
+export async function performanceSuggestions(projectId: string) {
+  const project = await db.project.findUniqueOrThrow({ where: { id: projectId } }),
+    bundle = bundleSchema.parse(project.draft);
+  const suggestions = [
+    { slug: 'ferrite-core', purpose: 'Redução de uso de memória', warning: null },
+    { slug: 'lithium', purpose: 'Otimização da simulação do jogo', warning: null },
+    { slug: 'modernfix', purpose: 'Inicialização e uso de memória', warning: null },
+    {
+      slug: 'entityculling',
+      purpose: 'Reduzir renderização de entidades ocultas',
+      warning: 'Verifique o renderizador e teste no aparelho.',
+    },
+    {
+      slug: 'sodium',
+      purpose: 'Substituição do renderizador',
+      warning:
+        'Sem suporte oficial a Android. Exige validação específica do renderizador. Não combinar com OptiFine ou Embeddium.',
+    },
+    {
+      slug: 'embeddium',
+      purpose: 'Renderização otimizada para Forge',
+      warning: 'Exige validação no aparelho. Não combinar com Sodium ou OptiFine.',
+    },
+  ];
+  const results = await Promise.allSettled(
+    suggestions.map(async (s) => {
+      const p = await modrinth.getModpack(s.slug);
+      const versions = await modrinth.getVersions(p.externalProjectId, {
+        minecraft: bundle.minecraft,
+        loader: bundle.loader.type,
+      });
+      if (!versions.length) return null;
+      const present = bundle.files.some(
+        (f) =>
+          (f.provider === 'modrinth' && f.projectId === p.externalProjectId) ||
+          f.filename.toLowerCase().includes(s.slug.replace('-', '')),
+      );
+      const approved = env.PERFORMANCE_APPROVED_MODS.some(
+        (a) =>
+          a.projectId === p.externalProjectId &&
+          a.versionId === versions[0]!.id &&
+          a.minecraft === bundle.minecraft &&
+          a.loader === bundle.loader.type,
+      );
+      return {
+        project: p,
+        version: versions[0]!,
+        purpose: s.purpose,
+        warning: s.warning,
+        present,
+        androidValidated: approved,
+      };
+    }),
+  );
+  return {
+    items: results.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : [])),
+    manualOnly: true,
+    optifine: {
+      name: 'OptiFine',
+      websiteUrl: 'https://optifine.net/downloads',
+      warning:
+        'Importação manual a partir da origem, respeitando licença e compatibilidade; não combinar com Sodium/Embeddium.',
+    },
+  };
+}

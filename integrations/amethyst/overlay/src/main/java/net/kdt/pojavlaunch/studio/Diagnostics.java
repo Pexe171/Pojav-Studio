@@ -14,6 +14,9 @@ import java.io.FileInputStream;
 import java.util.concurrent.Executor;
 
 public final class Diagnostics {
+    public static void recordGameExit(Activity activity,int code) {
+        if(code!=0)activity.getSharedPreferences("studio",0).edit().putInt("pendingGameExit",code).apply();
+    }
     public static String redact(String text) {
         return text.replaceAll("(?i)(Bearer\\s+)[A-Za-z0-9._~+/=-]+","$1[REDACTED]")
             .replaceAll("(?i)((?:access[_-]?token|refresh[_-]?token|client[_-]?secret|password|authorization|x-api-key|session[_-]?id|--accessToken)[\\\"'\\s:=]+)[^\\s,\\\"';&]+","$1[REDACTED]")
@@ -29,7 +32,7 @@ public final class Diagnostics {
                 .setNegativeButton("Não enviar",(dialog,which)->acknowledged.run())
                 .setPositiveButton("Enviar",(dialog,which)->executor.execute(()->{
                     try{
-                        JSONObject report=new JSONObject();report.put("consent",true);report.put("kind",kind);report.put("launcherVersion",BuildConfig.VERSION_NAME);report.put("message",redact(message));report.put("log",sanitized);
+                        JSONObject report=new JSONObject();report.put("consent",true);report.put("kind",kind);report.put("launcherVersion",BuildConfig.VERSION_NAME);report.put("message",redact(message.substring(0,Math.min(message.length(),2000))));report.put("log",sanitized);
                         JSONObject device=new JSONObject();device.put("model",Build.MODEL);device.put("android",Build.VERSION.RELEASE);device.put("architecture",Build.SUPPORTED_ABIS[0]);report.put("device",device);
                         if(projectId!=null)report.put("projectId",projectId);if(releaseId!=null)report.put("releaseId",releaseId);
                         api.post("/api/v1/public/diagnostics",report);activity.runOnUiThread(()->Toast.makeText(activity,"Relatório enviado. Obrigado!",Toast.LENGTH_LONG).show());acknowledged.run();

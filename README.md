@@ -35,13 +35,13 @@ Para executar todo o painel em Docker, use `docker compose up -d --build`; abra 
 
 Mods de desempenho são **sugestões com instalação manual**, conforme a preferência escolhida. Não há instalação automática de Sodium, OptiFine ou outros mods. Compatibilidade com Minecraft/loader não equivale a compatibilidade com Android. [Sodium](https://modrinth.com/mod/sodium) informa que Android não é oficialmente suportado; teste o renderizador e evite combinar renderizadores concorrentes. Um perfil gráfico conservador separado pode ser ativado manualmente.
 
-`ANDROID_VALIDATED_TARGETS` começa vazio. Depois de testar Minecraft, loader e sua versão em um aparelho, registre a combinação, por exemplo:
+Testar Minecraft, loader e sua versão no Android é recomendado, mas não é um requisito para publicar. A configuração opcional abaixo pode registrar combinações testadas:
 
 ```dotenv
 ANDROID_VALIDATED_TARGETS=[{"minecraft":"1.20.1","loader":"fabric","loaderVersion":"0.16.0"}]
 ```
 
-Essa lista é uma declaração do operador de que realizou o teste; não produz uma homologação automática. A publicação permanece bloqueada para combinações que não constam nela.
+Essa lista é apenas uma referência do operador e não bloqueia a publicação. Depois de publicar, a release aparece no catálogo do aplicativo para instalação e teste.
 
 O overlay em `integrations/amethyst/overlay` implementa biblioteca com capas persistidas, versões instaladas, atualização manual, instalação verificada em staging, rollback, cache do catálogo e controle de toque que detecta teclado físico. É possível criar um perfil local e baixar os arquivos oficiais do Minecraft sem login Microsoft. O perfil local não autentica em servidores que exigem conta original. O login Microsoft continua disponível. A biblioteca abre o perfil instalado no launcher original, onde o jogador inicia o jogo.
 

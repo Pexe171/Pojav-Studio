@@ -6,9 +6,7 @@ const url = new URL(process.env.DATABASE_URL);
 url.hostname = 'postgres';
 url.pathname = '/studio_integration';
 process.env.DATABASE_URL = url.href;
-process.env.ANDROID_VALIDATED_TARGETS = JSON.stringify([
-  { minecraft: '1.20.1', loader: 'fabric', loaderVersion: '0.16.0' },
-]);
+process.env.ANDROID_VALIDATED_TARGETS = '[]';
 const migrate = spawnSync(process.execPath, ['/app/scripts/prisma.mjs', 'migrate', 'deploy'], {
   stdio: 'inherit',
   env: process.env,

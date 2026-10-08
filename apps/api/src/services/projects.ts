@@ -12,7 +12,6 @@ import {
   type ImportedFrom,
   type ReleaseManifest,
 } from '@studio/core';
-import { env } from '../config.js';
 import { db, builds, objectUrl, putObject, hasObject } from '../infra.js';
 import { compatible, providers } from '../providers/registry.js';
 import { json, queueImport } from './jobs.js';
@@ -314,17 +313,6 @@ export async function publishProject(id: string, input: unknown) {
     throw new BadRequestException('Resolva os arquivos obrigatórios antes de publicar');
   if (bundle.warnings.some((w) => w.startsWith('Dependência de runtime não suportada')))
     throw new BadRequestException('Dependência de runtime não suportada');
-  if (
-    !env.ANDROID_VALIDATED_TARGETS.some(
-      (t) =>
-        t.minecraft === bundle.minecraft &&
-        t.loader === bundle.loader.type &&
-        t.loaderVersion === bundle.loader.version,
-    )
-  )
-    throw new BadRequestException(
-      'Esta combinação de Minecraft e loader ainda não foi homologada no Android',
-    );
   for (const file of files) {
     if (!compatible(bundle, file))
       throw new BadRequestException(`Arquivo incompatível: ${file.name}`);

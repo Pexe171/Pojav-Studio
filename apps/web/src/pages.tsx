@@ -839,7 +839,6 @@ export function ProjectEditor() {
     navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const project = useResource<Project>(`/projects/${id}`);
-  const settings = useSettings();
   const [name, setName] = useState(''),
     [version, setVersion] = useState(''),
     [error, setError] = useState(''),
@@ -876,12 +875,6 @@ export function ProjectEditor() {
   const p = project.data,
     b = p.draft;
   const pending = b.files.filter((f) => f.required && f.status !== 'resolved');
-  const validated = settings.validatedTargets.some(
-    (t) =>
-      t.minecraft === b.minecraft &&
-      t.loader === b.loader.type &&
-      t.loaderVersion === b.loader.version,
-  );
   return (
     <>
       <Link className="back-link" to="/projects">
@@ -899,7 +892,7 @@ export function ProjectEditor() {
         </div>
         <button
           className="primary"
-          disabled={busy || pending.length > 0 || !validated}
+          disabled={busy || pending.length > 0}
           onClick={() => {
             setConfirmed(false);
             setPublishOpen(true);
@@ -920,12 +913,6 @@ export function ProjectEditor() {
             </p>
           </div>
         </div>
-      )}
-      {!validated && (
-        <Notice>
-          Esta combinação de Minecraft e loader ainda precisa ser validada no Android antes da
-          publicação.
-        </Notice>
       )}
       <div className="editor-layout">
         <section>

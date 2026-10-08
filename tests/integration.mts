@@ -50,12 +50,12 @@ try {
   await call(`/projects/${projectId}`, 'PATCH', { revision: 99, name: 'stale' }, 409);
   const exported = await call(`/projects/${projectId}/export`);
   assert.ok(exported.files.every((f: any) => f.storageKey === null));
-  // Publication is intentionally blocked until the MC/loader pair is tested on a device.
+  // Publication does not require a prevalidated Android target.
   await call(
     `/projects/${projectId}/releases`,
     'POST',
     { revision: detail.revision, version: 'test', distributionConfirmed: true },
-    400,
+    201,
   );
   await call('/public/diagnostics', 'POST', { consent: false }, 400);
   const report = await call(
@@ -92,7 +92,7 @@ try {
     ),
   );
   console.log(
-    'PASS: autenticação, upload MRPACK, BullMQ, S3, commit único, revisão otimista, exportação segura, bloqueio de publicação não homologada, consentimento/redação, catálogo Modrinth real e paginação.',
+    'PASS: autenticação, upload MRPACK, BullMQ, S3, commit único, revisão otimista, exportação segura, publicação sem homologação obrigatória, consentimento/redação, catálogo Modrinth real e paginação.',
   );
 } finally {
   if (reportId) await db.diagnosticReport.deleteMany({ where: { id: reportId } });

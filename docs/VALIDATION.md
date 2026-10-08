@@ -17,7 +17,7 @@ Resultados obtidos neste ambiente Windows com Docker Desktop Linux:
 
 Não foi fornecida uma chave CurseForge. Seu contrato, filtros, normalização e recusa de download foram testados com respostas controladas; busca e importação autenticadas reais CurseForge continuam pendentes da configuração da chave.
 
-O catálogo Android fica vazio até publicar uma release. `ANDROID_VALIDATED_TARGETS` permanece vazio, pois não há aparelho Android conectado. Nenhuma combinação Minecraft/loader foi declarada homologada sem teste. FPS, teclado físico, renderizadores, autenticação Microsoft, instalação/rollback e jogo offline precisam ser verificados em aparelho real.
+O catálogo Android fica vazio até publicar uma release. A exigência de homologação prévia foi removida a pedido do operador em 08/10/2026: é possível publicar e depois instalar pelo aplicativo para testar. Isso não declara compatibilidade Android. FPS, teclado físico, renderizadores, autenticação Microsoft, instalação/rollback e jogo offline precisam ser verificados em aparelho real.
 
 A preparação do checkout Amethyst fixado e o overlay passaram. A compilação final `assembleRelease` passou com JDK 21 e 8, SDK 37.0 e os NDKs do upstream. O APK tem 130.991.575 bytes; assinatura v1 e v2 verificadas por apksigner. SHA-256: `c9c8120d39f7c0cf2f00eec7a156b3c8d8fdd1da1c7500ce3f64457c57250507`. O arquivo está em `artifacts/pojav-studio-1.apk`, fora do Git, e foi registrado no painel como o launcher inicial. Seu asset aponta à API HTTPS própria; uma busca nos conteúdos do APK confirmou que nenhuma senha de banco, storage, sessão, keystore ou administrador foi embutida. O lint do launcher upstream reportou erros de tradução não fatais, portanto não se declara lint limpo.
 

@@ -43,7 +43,15 @@ public final class Telemetry {
         scheduler.schedule(job.build());
     }
     private static SharedPreferences prefs(){return app.getSharedPreferences("studio",0);}
-    private static boolean enabled(){return app!=null&&prefs().getBoolean("telemetryEnabled",false);}
+    private static boolean enabled(){try{return app!=null&&new TelemetryIdentity(folder()).enabled(prefs().getBoolean("telemetryEnabled",false));}catch(IOException error){return false;}}
+    private static boolean previousProcessAlive(JSONObject state){
+        int previous=state.optInt("processId",-1);
+        ActivityManager manager=(ActivityManager)app.getSystemService(Context.ACTIVITY_SERVICE);
+        java.util.List<ActivityManager.RunningAppProcessInfo> processes=manager==null?null:manager.getRunningAppProcesses();
+        if(processes==null)return true;
+        for(ActivityManager.RunningAppProcessInfo process:processes)if(process.processName.equals(app.getPackageName()+":game")&&(previous<0||process.pid==previous))return true;
+        return false;
+    }
     private static File folder(){File dir=new File(app.getFilesDir(),"studio-telemetry");dir.mkdirs();return dir;}
     private static TelemetryQueue queue()throws IOException{return new TelemetryQueue(folder(),100,MAX_BYTES,WEEK);}
     private static final Runnable timer=new Runnable(){public void run(){if(foreground>0){worker.execute(()->{if(gameActive)captureLog(gameProject,gameRelease);flush();});ui.postDelayed(this,300000);}}};
@@ -54,6 +62,7 @@ public final class Telemetry {
             if(!enabled())return;
             File active=new File(folder(),"active-session.json");
             if(active.isFile())try{JSONObject previous=new JSONObject(Tools.read(active.getPath()));
+                if(previousProcessAlive(previous)){flush();return;}
                 String previousSession=previous.optString("sessionId",session);
                 captureLog(previous.optString("projectId",null),previous.optString("releaseId",null),previousSession);
                 recordNow("session-interrupted",previous.optString("projectId",null),previous.optString("releaseId",null),new JSONObject().put("message","Execução anterior não registrou saída; pode ter sido encerrada pelo usuário ou Android."),"",previousSession);active.delete();
@@ -75,10 +84,11 @@ public final class Telemetry {
                     }catch(Exception ignored){gameProject=null;gameRelease=null;}
                     final String project=gameProject,release=gameRelease,launchSession=gameSession;
                     worker.execute(()->{try{
-                        JSONObject state=new JSONObject().put("projectId",project).put("releaseId",release).put("sessionId",launchSession);
+                        JSONObject state=new JSONObject().put("projectId",project).put("releaseId",release).put("sessionId",launchSession).put("processId",android.os.Process.myPid());
                         Tools.write(new File(folder(),"active-session.json").getPath(),state.toString());
                         recordNow("game-start",project,release,new JSONObject().put("performanceMode",prefs().getString("performanceMode","light")),"",launchSession);flush();
                     }catch(Exception ignored){}});
+                    ui.postDelayed(()->worker.execute(()->{if(gameActive&&launchSession.equals(gameSession))captureLog(project,release,launchSession);flush();}),30000);
                 }
             }
             public void onActivityDestroyed(Activity activity){}
@@ -91,8 +101,8 @@ public final class Telemetry {
     public static void showSettings(Activity activity){
         new AlertDialog.Builder(activity).setTitle("Relatórios automáticos")
             .setMessage("Enviar logs e eventos por aparelho, modpack e versão para ajudar a investigar erros?\n\nInclui modelo, Android, versão do launcher e um código aleatório deste aplicativo. Credenciais identificadas são removidas. Sem internet, a fila fica neste aparelho por até 7 dias, limitada a 5 MB. O envio ocorre em segundo plano. Você pode desativar depois e apagar a fila local.\n\nEstado atual: "+(enabled()?"ativado":"desativado"))
-            .setPositiveButton("Aceitar e ativar",(d,w)->{prefs().edit().putBoolean("telemetryEnabled",true).apply();nextSend=0;worker.execute(Telemetry::flush);})
-            .setNegativeButton("Desativar e apagar fila",(d,w)->{prefs().edit().putBoolean("telemetryEnabled",false).apply();gameActive=false;JobScheduler scheduler=(JobScheduler)app.getSystemService(Context.JOB_SCHEDULER_SERVICE);if(scheduler!=null)scheduler.cancel(JOB_ID);worker.execute(()->{for(File file:queueFiles())file.delete();new File(folder(),"active-session.json").delete();});})
+            .setPositiveButton("Aceitar e ativar",(d,w)->{prefs().edit().putBoolean("telemetryEnabled",true).apply();nextSend=0;worker.execute(()->{try{new TelemetryIdentity(folder()).setEnabled(true);recordNow("telemetry-enabled",null,null,new JSONObject(),"");flush();}catch(Exception ignored){}});})
+            .setNegativeButton("Desativar e apagar fila",(d,w)->{prefs().edit().putBoolean("telemetryEnabled",false).apply();gameActive=false;JobScheduler scheduler=(JobScheduler)app.getSystemService(Context.JOB_SCHEDULER_SERVICE);if(scheduler!=null)scheduler.cancel(JOB_ID);worker.execute(()->{try{new TelemetryIdentity(folder()).setEnabled(false);}catch(IOException ignored){}for(File file:queueFiles())file.delete();new File(folder(),"active-session.json").delete();});})
             .setNeutralButton("Fechar",null).show();
     }
     public static void record(String kind,String project,String release,JSONObject data){
@@ -143,7 +153,7 @@ public final class Telemetry {
             JSONArray events=new JSONArray();
             for(File file:files){if(events.length()==10)break;try{JSONObject e=new JSONObject(Tools.read(file.getPath()));events.put(e);sent.put(e.getString("id"),file);}catch(Exception invalid){file.delete();}}
             if(events.length()==0||!enabled())return;
-            String device=prefs().getString("telemetryDeviceId",null);if(device==null){device=UUID.randomUUID().toString();prefs().edit().putString("telemetryDeviceId",device).apply();}
+            String device=new TelemetryIdentity(folder()).deviceId(prefs().getString("telemetryDeviceId",null));
             JSONObject info=new JSONObject().put("model",Build.MODEL).put("android",Build.VERSION.RELEASE).put("architecture",Build.SUPPORTED_ABIS[0]);
             JSONObject payload=new JSONObject().put("consent",true).put("deviceId",device).put("device",info).put("events",events);
             JSONObject response=api.postFast("/api/v1/public/telemetry",payload);

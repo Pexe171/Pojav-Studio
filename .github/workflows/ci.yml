@@ -38,3 +38,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/studio-telemetry-test"
           javac -d "$RUNNER_TEMP/studio-telemetry-test" integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/StudioFiles.java integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/TelemetryQueue.java tests/TelemetryQueueTest.java
           java -cp "$RUNNER_TEMP/studio-telemetry-test" net.kdt.pojavlaunch.studio.TelemetryQueueTest
+      - name: Test telemetry across launcher and game processes
+        run: |
+          javac -d "$RUNNER_TEMP/studio-telemetry-test" integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/StudioFiles.java integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/TelemetryIdentity.java tests/TelemetryIdentityTest.java
+          java -cp "$RUNNER_TEMP/studio-telemetry-test" net.kdt.pojavlaunch.studio.TelemetryIdentityTest

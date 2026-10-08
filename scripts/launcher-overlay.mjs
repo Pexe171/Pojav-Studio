@@ -96,6 +96,12 @@ export async function applyOverlay(root, config) {
     'Logger.appendToLog("Java Exit code: " + exitCode);\n        net.kdt.pojavlaunch.studio.Diagnostics.recordGameExit(activity, exitCode);',
   );
   const main = join(module, 'src/main/java/net/kdt/pojavlaunch/MainActivity.java');
+  // The game runs in :game; static registration in the launcher process does not reach it.
+  await change(
+    main,
+    'super.onCreate(savedInstanceState);',
+    'super.onCreate(savedInstanceState);\n        try { net.kdt.pojavlaunch.studio.Telemetry.register(getApplication(), new net.kdt.pojavlaunch.studio.StudioApi(this)); } catch (Exception ignored) {}',
+  );
   await change(
     main,
     'private ControlLayout mControlLayout;',

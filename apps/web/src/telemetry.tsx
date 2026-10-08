@@ -23,6 +23,7 @@ interface Page {
   nextOffset: number | null;
 }
 const labels: Record<string, string> = {
+  'telemetry-enabled': 'Envio automático ativado',
   'installation-start': 'Instalação iniciada',
   'installation-ready': 'Instalação concluída',
   'installation-pending': 'Instalação pendente',

@@ -27,6 +27,7 @@ export const telemetrySchema = z.object({
         projectId: identifier.optional(),
         releaseId: identifier.optional(),
         kind: z.enum([
+          'telemetry-enabled',
           'installation-start',
           'installation-ready',
           'installation-pending',

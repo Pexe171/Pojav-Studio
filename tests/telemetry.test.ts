@@ -52,6 +52,12 @@ function batch() {
     ],
   };
 }
+it('accepts confirmation of opt-in without requiring a modpack', async () => {
+  const input = batch();
+  const event = { ...input.events[0], kind: 'telemetry-enabled' };
+  const response = await submitTelemetry({ ...input, events: [event] });
+  expect(response.accepted).toEqual([event.id]);
+});
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.eval.mockResolvedValue([1, 3600]);

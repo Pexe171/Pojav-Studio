@@ -135,6 +135,7 @@ public final class StudioInstaller {
         JSONObject performance=manifest.optJSONObject("performance");if(performance!=null&&performance.optBoolean("enabled",false)){
             File options=new File(stage,"options.txt");String text=options.isFile()?Tools.read(options.getPath()):"";for(String key:new String[]{"renderDistance","simulationDistance","maxFps"}){text=text.replaceAll("(?m)^"+key+":.*(?:\\n|$)","");text+=key+":"+performance.getInt(key)+"\n";}Tools.write(options.getPath(),text);
         }
+        applyPerformance(stage,manifest);
         Tools.write(new File(stage,".studio-manifest.json").getPath(),manifest.toString());if(!finalDir.exists()&&!stage.renameTo(finalDir))throw new IOException("Falha ao ativar instância");
         LauncherProfiles.load();String profileId=UUID.nameUUIDFromBytes(("studio:"+projectId).getBytes(StandardCharsets.UTF_8)).toString();MinecraftProfile profile=new MinecraftProfile();profile.name=manifest.getString("name");profile.gameDir="./custom_instances/studio-"+projectId+"/"+releaseId;profile.lastVersionId="vanilla".equals(manifest.getJSONObject("loader").getString("type"))?manifest.getString("minecraft"):loader(manifest).getVersionId();profile.javaDir=Tools.LAUNCHERPROFILES_RTPREFIX+MultiRTUtils.getExactJreName(manifest.getInt("runtime"));
         if(performance!=null&&!performance.isNull("renderer"))profile.pojavRendererName=performance.getString("renderer");
@@ -144,7 +145,12 @@ public final class StudioInstaller {
     private void copyTree(File source,File target) throws IOException {if(!source.exists())return;if(!source.getAbsolutePath().equals(source.getCanonicalPath()))throw new IOException("Link em dados locais");if(source.isDirectory()){if(!target.isDirectory()&&!target.mkdirs())throw new IOException("Falha ao preservar mundo");File[] files=source.listFiles();if(files!=null)for(File f:files)copyTree(f,new File(target,f.getName()));}else {if(!target.getParentFile().isDirectory())target.getParentFile().mkdirs();try(InputStream in=new FileInputStream(source);OutputStream out=new FileOutputStream(target)){byte[] bytes=new byte[65536];int count;while((count=in.read(bytes))!=-1)out.write(bytes,0,count);}}}
     public void selectInstalled(String projectId) throws Exception {
         String installed=activity.getSharedPreferences("studio",0).getString("installed:"+projectId,null);if(installed==null)throw new IOException("Modpack não instalado");File root=instance(projectId,installed);if(!new File(root,".studio-manifest.json").isFile())throw new IOException("Instalação local incompleta");
+        applyPerformance(root,new JSONObject(Tools.read(new File(root,".studio-manifest.json").getPath())));
         LauncherProfiles.load();String profileId=UUID.nameUUIDFromBytes(("studio:"+projectId).getBytes(StandardCharsets.UTF_8)).toString();if(!LauncherProfiles.mainProfileJson.profiles.containsKey(profileId))throw new IOException("Perfil local não encontrado");LauncherPreferences.DEFAULT_PREF.edit().putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE,profileId).apply();
+    }
+    private void applyPerformance(File root,JSONObject manifest) throws Exception {
+        android.content.SharedPreferences prefs=activity.getSharedPreferences("studio",0);
+        StudioPerformance.apply(root,prefs.getString("performanceMode","light"),manifest.getString("minecraft"),prefs.getLong("performanceRevision",0));
     }
     public void rollback(String projectId) throws Exception {
         String old=activity.getSharedPreferences("studio",0).getString("previous:"+projectId,null);if(old==null)throw new IOException("Nenhuma versão anterior disponível");File root=instance(projectId,old);JSONObject manifest=new JSONObject(Tools.read(new File(root,".studio-manifest.json").getPath()));

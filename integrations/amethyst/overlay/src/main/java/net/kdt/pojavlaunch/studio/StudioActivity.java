@@ -45,6 +45,7 @@ public final class StudioActivity extends Activity {
         TextView intro=text("Seus modpacks. Escolha um mundo para jogar.",15,Color.rgb(153,160,181));intro.setPadding(0,dp(8),0,dp(15));root.addView(intro);
         LinearLayout actions=new LinearLayout(this);Button refresh=button("Atualizar catálogo"),account=button("Conta / launcher"),controls=button("Controles");actions.addView(refresh);actions.addView(account);actions.addView(controls);HorizontalScrollView actionScroll=new HorizontalScrollView(this);actionScroll.addView(actions);root.addView(actionScroll);
         refresh.setOnClickListener(v->refresh());account.setOnClickListener(v->startActivity(new Intent(this,LauncherActivity.class)));controls.setOnClickListener(v->touchMode());
+        Button performance=button("Desempenho");actions.addView(performance);performance.setOnClickListener(v->performanceMode());
         status=text("Abrindo biblioteca local...",14,Color.rgb(180,166,223));status.setPadding(0,dp(12),0,dp(12));root.addView(status);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setVisibility(android.view.View.GONE);root.addView(progress);
         ScrollView scroll=new ScrollView(this);library=new LinearLayout(this);library.setOrientation(LinearLayout.VERTICAL);scroll.addView(library);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
@@ -73,6 +74,16 @@ public final class StudioActivity extends Activity {
         }catch(Exception error){runOnUiThread(()->{status.setText("Offline · seus modpacks instalados continuam disponíveis");render();});}finally{refreshing=false;}
     });}
     private String installed(String projectId){return getSharedPreferences("studio",0).getString("installed:"+projectId,null);}
+    private void performanceMode(){
+        String[] labels={"Leve: gráficos baixos, 4 chunks, 30 FPS","Equilibrado: gráficos baixos, 6 chunks, 60 FPS","Configurações originais do modpack"};
+        String[] values={"light","balanced","original"};
+        String current=getSharedPreferences("studio",0).getString("performanceMode","light");
+        new AlertDialog.Builder(this).setTitle("Desempenho no celular")
+            .setSingleChoiceItems(labels,Arrays.asList(values).indexOf(current),(dialog,which)->{
+                getSharedPreferences("studio",0).edit().putString("performanceMode",values[which]).putLong("performanceRevision",System.currentTimeMillis()).apply();
+                status.setText("Perfil salvo. Será aplicado ao iniciar pela biblioteca. Nenhum mod foi instalado.");dialog.dismiss();
+            }).setNegativeButton("Fechar",null).show();
+    }
     private void render(){if(library==null)return;library.removeAllViews();renderRow("Continuar jogando",true);renderRow("Explorar modpacks",false);if(cards.length()==0){TextView empty=text("Nenhum modpack publicado ainda. Quando houver releases no painel, elas aparecerão aqui.",16,Color.LTGRAY);empty.setPadding(0,dp(28),0,dp(28));library.addView(empty);}}
     private void renderRow(String title,boolean local){LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);int count=0;for(int i=0;i<cards.length();i++){try{JSONObject card=cards.getJSONObject(i);String current=installed(card.getString("id"));if(local!=(current!=null))continue;count++;LinearLayout tile=new LinearLayout(this);tile.setOrientation(LinearLayout.VERTICAL);tile.setPadding(dp(10),dp(10),dp(10),dp(14));tile.setBackgroundColor(Color.rgb(29,32,46));LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(dp(205),-2);layout.setMargins(0,0,dp(14),dp(12));row.addView(tile,layout);
                 ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setBackgroundColor(Color.rgb(51,44,73));tile.addView(image,new LinearLayout.LayoutParams(-1,dp(130)));loadCover(card.optString("icon",""),image);

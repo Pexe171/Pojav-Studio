@@ -28,3 +28,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/studio-directory-test"
           javac -d "$RUNNER_TEMP/studio-directory-test" integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/StudioFiles.java tests/StudioFilesTest.java
           java -cp "$RUNNER_TEMP/studio-directory-test" net.kdt.pojavlaunch.studio.StudioFilesTest
+      - name: Test launcher performance profiles
+        run: |
+          mkdir -p "$RUNNER_TEMP/studio-performance-test"
+          javac -d "$RUNNER_TEMP/studio-performance-test" integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/StudioPerformance.java tests/StudioPerformanceTest.java
+          java -cp "$RUNNER_TEMP/studio-performance-test" net.kdt.pojavlaunch.studio.StudioPerformanceTest

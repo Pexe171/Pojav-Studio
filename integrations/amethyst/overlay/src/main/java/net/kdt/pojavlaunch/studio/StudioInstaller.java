@@ -66,6 +66,7 @@ public final class StudioInstaller {
         File finalDir=instance(manifest.getString("projectId"),manifest.getString("releaseId"));File stage=new File(finalDir.getPath()+"-staging");if(!stage.isDirectory()&&!stage.mkdirs())throw new IOException("Falha ao criar instância");
         JSONArray files=manifest.getJSONArray("files");
         downloadFiles(manifest,stage,progress);
+        Tools.write(new File(activity.getFilesDir(),"studio-pending-install.json").getPath(),manifest.toString());
         int runtime=manifest.getInt("runtime");if(MultiRTUtils.getExactJreName(runtime)==null){progress.update("Preparando Java "+runtime,files.length(),files.length());boolean available=false;for(NewJREUtil.ExternalRuntime jre:NewJREUtil.ExternalRuntime.values())if(jre.majorVersion==runtime){jre.downloadRuntime(activity);available=true;break;}if(!available||MultiRTUtils.getExactJreName(runtime)==null)throw new IOException("Runtime Java indisponível");}
         JSONObject loader=manifest.getJSONObject("loader");if(!"vanilla".equals(loader.getString("type"))){ModLoader info=loader(manifest);File loaderJson=new File(Tools.DIR_HOME_VERSION,info.getVersionId()+"/"+info.getVersionId()+".json");if(!loaderJson.isFile()){
             progress.update("Preparando "+loader.getString("type"),files.length(),files.length());final Exception[] error={null};final File[] installer={null};
@@ -73,7 +74,7 @@ public final class StudioInstaller {
             if(info.requiresGuiInstallation()){if(installer[0]==null)throw new IOException("Instalador do loader indisponível");Tools.write(new File(activity.getFilesDir(),"studio-pending-install.json").getPath(),manifest.toString());activity.runOnUiThread(()->activity.startActivity(info.getInstallationIntent(activity,installer[0])));return manifest;}
             if(!loaderJson.isFile())throw new IOException("Loader não foi instalado corretamente");
         }}
-        progress.update("Preparando Minecraft para uso offline",files.length(),files.length());new MinecraftDownloader().prepareStudio(activity,"vanilla".equals(loader.getString("type"))?manifest.getString("minecraft"):loader(manifest).getVersionId());check();activate(manifest,stage,finalDir);return manifest;
+        progress.update("Preparando Minecraft para uso offline",files.length(),files.length());new MinecraftDownloader().prepareStudio(activity,"vanilla".equals(loader.getString("type"))?manifest.getString("minecraft"):loader(manifest).getVersionId());check();activate(manifest,stage,finalDir);new File(activity.getFilesDir(),"studio-pending-install.json").delete();return manifest;
     }
     private void downloadFiles(JSONObject manifest,File stage,Progress progress) throws Exception {
         JSONArray files=manifest.getJSONArray("files");
@@ -107,8 +108,24 @@ public final class StudioInstaller {
         }
     }
     public boolean completePending() throws Exception {
-        File pending=new File(activity.getFilesDir(),"studio-pending-install.json");if(!pending.isFile())return false;JSONObject manifest=new JSONObject(Tools.read(pending.getPath()));ModLoader loader=loader(manifest);File json=new File(Tools.DIR_HOME_VERSION,loader.getVersionId()+"/"+loader.getVersionId()+".json");if(!json.isFile())return false;
-        new MinecraftDownloader().prepareStudio(activity,loader.getVersionId());File finalDir=instance(manifest.getString("projectId"),manifest.getString("releaseId"));activate(manifest,new File(finalDir.getPath()+"-staging"),finalDir);pending.delete();return true;
+        File pending=new File(activity.getFilesDir(),"studio-pending-install.json");if(!pending.isFile())return false;JSONObject manifest=new JSONObject(Tools.read(pending.getPath()));
+        String project=manifest.getString("projectId"),release=manifest.getString("releaseId");
+        if(release.equals(activity.getSharedPreferences("studio",0).getString("installed:"+project,null))){pending.delete();return false;}
+        String version=manifest.getString("minecraft");
+        if(!"vanilla".equals(manifest.getJSONObject("loader").getString("type"))){ModLoader loader=loader(manifest);File json=new File(Tools.DIR_HOME_VERSION,loader.getVersionId()+"/"+loader.getVersionId()+".json");if(!json.isFile())return false;version=loader.getVersionId();}
+        if(MultiRTUtils.getExactJreName(manifest.getInt("runtime"))==null)return false;
+        new MinecraftDownloader().prepareStudio(activity,version);check();File finalDir=instance(project,release);activate(manifest,new File(finalDir.getPath()+"-staging"),finalDir);pending.delete();return true;
+    }
+    public JSONObject pending(String projectId) {
+        try{File file=new File(activity.getFilesDir(),"studio-pending-install.json");if(!file.isFile())return null;JSONObject manifest=new JSONObject(Tools.read(file.getPath()));return projectId.equals(manifest.getString("projectId"))?manifest:null;}catch(Exception ignored){return null;}
+    }
+    public JSONObject resumePending(String projectId,Progress progress) throws Exception {
+        JSONObject manifest=pending(projectId);if(manifest==null)throw new IOException("Instalação pendente não encontrada");
+        if(completePending())return manifest;
+        // Reuse the original release, even if a newer one is now in the catalog.
+        JSONObject card=new JSONObject().put("id",projectId).put("releaseId",manifest.getString("releaseId"))
+            .put("manifestEndpoint","/api/v1/public/releases/"+identifier(manifest.getString("releaseId"))+"/manifest");
+        return install(card,progress);
     }
     private ModLoader loader(JSONObject manifest) throws Exception {JSONObject l=manifest.getJSONObject("loader");String type=l.getString("type");int id=type.equals("forge")?ModLoader.MOD_LOADER_FORGE:type.equals("fabric")?ModLoader.MOD_LOADER_FABRIC:type.equals("quilt")?ModLoader.MOD_LOADER_QUILT:type.equals("neoforge")?ModLoader.MOD_LOADER_NEOFORGE:-1;if(id<0)throw new IOException("Loader não suportado");return new ModLoader(id,l.getString("version"),manifest.getString("minecraft"));}
     private void activate(JSONObject manifest,File stage,File finalDir) throws Exception {

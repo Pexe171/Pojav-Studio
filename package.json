@@ -10,8 +10,10 @@
     "node": ">=22"
   },
   "scripts": {
+    "predev": "npm run build -w @studio/core",
     "dev": "concurrently -n api,web,worker \"npm run dev -w @studio/api\" \"npm run dev -w @studio/web\" \"npm run worker:dev -w @studio/api\"",
     "build": "npm run build -w @studio/core && npm run build -w @studio/api && npm run build -w @studio/web",
+    "pretypecheck": "npm run build -w @studio/core",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "db:generate": "npm run db:generate -w @studio/api",

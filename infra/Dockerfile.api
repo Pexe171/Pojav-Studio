@@ -9,4 +9,5 @@ COPY scripts scripts
 COPY integrations integrations
 RUN npm ci && npm run build -w @studio/core && npm run db:generate && npm run build -w @studio/api
 EXPOSE 3000
+USER node
 CMD ["npm", "run", "start", "-w", "@studio/api"]

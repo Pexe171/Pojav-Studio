@@ -38,11 +38,15 @@ services:
     restart: unless-stopped
   api:
     build: { context: ., dockerfile: infra/Dockerfile.api }
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
     env_file: .env
     environment:
       DATABASE_URL: postgresql://studio:${POSTGRES_PASSWORD:-studio_dev_password}@postgres:5432/studio
       REDIS_URL: redis://redis:6379
       STORAGE_ENDPOINT: http://storage:9000
+      APK_KEYSTORE_PASSWORD: ''
+      APK_KEY_PASSWORD: ''
     command: [sh, -c, 'npm run db:migrate && npm run start -w @studio/api']
     depends_on:
       postgres: { condition: service_healthy }
@@ -51,12 +55,16 @@ services:
     restart: unless-stopped
   worker:
     build: { context: ., dockerfile: infra/Dockerfile.api }
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
     env_file: .env
     environment:
       DATABASE_URL: postgresql://studio:${POSTGRES_PASSWORD:-studio_dev_password}@postgres:5432/studio
       REDIS_URL: redis://redis:6379
       STORAGE_ENDPOINT: http://storage:9000
       WORKER_ROLE: imports
+      APK_KEYSTORE_PASSWORD: ''
+      APK_KEY_PASSWORD: ''
     command: [npm, run, worker, -w, '@studio/api']
     depends_on: [api]
     restart: unless-stopped

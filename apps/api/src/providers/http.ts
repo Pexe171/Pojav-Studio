@@ -30,6 +30,7 @@ export async function apiJson<T>(
           ...(body ? { 'Content-Type': 'application/json' } : {}),
         },
         body: body ? JSON.stringify(body) : undefined,
+        redirect: 'error',
         signal: AbortSignal.timeout(30000),
       });
     } catch (error) {

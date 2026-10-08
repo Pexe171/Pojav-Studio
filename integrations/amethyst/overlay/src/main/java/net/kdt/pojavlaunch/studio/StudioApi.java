@@ -23,10 +23,14 @@ public final class StudioApi {
         return base+endpoint;
     }
     public JSONObject get(String endpoint) throws Exception {return request(endpoint,null);}
+    public JSONObject getFast(String endpoint) throws Exception {return request(endpoint,null,4000);}
     public JSONObject post(String endpoint,JSONObject body) throws Exception {return request(endpoint,body);}
     private JSONObject request(String endpoint,JSONObject body) throws Exception {
+        return request(endpoint,body,30000);
+    }
+    private JSONObject request(String endpoint,JSONObject body,int timeout) throws Exception {
         HttpURLConnection connection=(HttpURLConnection)new URL(absolute(endpoint)).openConnection();
-        connection.setConnectTimeout(20000);connection.setReadTimeout(30000);connection.setInstanceFollowRedirects(false);
+        connection.setConnectTimeout(Math.min(20000,timeout));connection.setReadTimeout(timeout);connection.setInstanceFollowRedirects(false);
         connection.setRequestProperty("Accept","application/json");
         try {
             if(body!=null){connection.setRequestMethod("POST");connection.setDoOutput(true);connection.setRequestProperty("Content-Type","application/json; charset=utf-8");connection.setRequestProperty("x-studio-request","1");try(OutputStream output=connection.getOutputStream()){output.write(body.toString().getBytes(StandardCharsets.UTF_8));}}

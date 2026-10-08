@@ -24,7 +24,7 @@ const schema = z.object({
     .transform((x) => x === 'true'),
   IMPORT_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(4),
   IMPORT_MAX_ARCHIVE_BYTES: z.coerce.number().default(536870912),
-  IMPORT_MAX_EXPANDED_BYTES: z.coerce.number().default(4294967296),
+  IMPORT_MAX_EXPANDED_BYTES: z.coerce.number().int().positive().max(4294967296).default(536870912),
   IMPORT_MAX_ENTRIES: z.coerce.number().default(20000),
   BUILD_ENABLED: z
     .string()

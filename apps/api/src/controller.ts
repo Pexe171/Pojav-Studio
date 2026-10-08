@@ -16,7 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request, Response } from 'express';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { bundleSchema, providerSchema } from '@studio/core';
+import { bundleSchema, providerSchema, pathSchema } from '@studio/core';
 import { env } from './config.js';
 import { db, putObject, objectUrl } from './infra.js';
 import { login, logout } from './auth.js';
@@ -198,7 +198,7 @@ export class ApiController {
   ) {
     const value = requiredFile(file);
     const { revision, path } = z
-      .object({ revision: z.coerce.number().int().positive(), path: z.string().max(512) })
+      .object({ revision: z.coerce.number().int().positive(), path: pathSchema })
       .parse(input);
     return projects.addLocalFile(identifiers.parse(id), revision, path, value.buffer);
   }
@@ -284,6 +284,22 @@ export class ApiController {
     });
     if (!build?.storageKey) throw new BadRequestException('Nenhum launcher disponível ainda');
     res.redirect(await objectUrl(build.storageKey, `pojav-studio-${build.versionCode}.apk`));
+  }
+  @Get('public/launcher/version') async launcherVersion() {
+    const build = await db.build.findFirst({
+      where: { status: 'ready', storageKey: { not: null }, sha256: { not: null } },
+      orderBy: { versionCode: 'desc' },
+    });
+    if (!build?.storageKey || !build.sha256)
+      throw new BadRequestException('Nenhum launcher disponível ainda');
+    return {
+      versionCode: build.versionCode,
+      minimumVersionCode: build.versionCode,
+      versionName: `1.0.${build.versionCode}`,
+      sha256: build.sha256,
+      url: await objectUrl(build.storageKey),
+      downloadHost: new URL(env.PUBLIC_STORAGE_ENDPOINT ?? env.STORAGE_ENDPOINT).hostname,
+    };
   }
   @Post('public/diagnostics') submitDiagnostic(@Body() input: unknown) {
     return submitDiagnostic(input);

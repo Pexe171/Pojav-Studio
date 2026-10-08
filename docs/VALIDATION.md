@@ -1,4 +1,8 @@
-# Validação — 7 de outubro de 2026
+# Validação — 8 de outubro de 2026
+
+APK 1.0.6 gerado pelo worker Android e baixado pelo domínio público com SHA-256 `52a6a46d269b61f016615bed19daac5485843e85cebd8f2cae294ec35f3c6ee3`. O endpoint público de versão informa versão instalada mínima 6. O launcher consulta silenciosamente ao abrir, retornar ao primeiro plano e a cada dois minutos enquanto está em primeiro plano. Quando a API informa uma versão obrigatória mais recente, apresenta a atualização; se a API falhar, permite continuar offline. É necessário instalar esta versão uma vez para ativar o mecanismo. Permissão de instalação e atualização no aparelho real ainda não foram verificadas.
+
+A revisão de segurança passou com 70 testes automatizados e uma integração isolada contra a API real. Detalhes, correções e limites estão em [SECURITY.md](SECURITY.md).
 
 Em 08/10/2026, o APK 1.0.4 foi compilado, baixado pelo Cloudflare com SHA-256 verificado e instalado por cima da versão anterior no BlueStacks. Com o perfil local existente, sem conta Microsoft cadastrada, o download oficial do Minecraft 26.3 iniciou e ultrapassou 110 MB de 560,48 MB. Esse teste confirma o desbloqueio do download; a conclusão da instalação e a execução dessa versão ainda não foram verificadas. SHA-256 do APK: `d022b568e5aee2af803c57d2459014b941e58446aad220e4735ed4175d7e46ac`.
 

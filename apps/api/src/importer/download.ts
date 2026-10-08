@@ -1,4 +1,5 @@
 import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { createHash } from 'node:crypto';
 import { createWriteStream, createReadStream } from 'node:fs';
 import { rm } from 'node:fs/promises';
@@ -17,18 +18,21 @@ const hosts = [
   'media.forgecdn.net',
 ];
 export function publicAddress(ip: string) {
+  if (!isIP(ip)) return false;
   if (ip.includes(':')) {
-    const s = ip.toLowerCase();
+    const s = new URL(`https://[${ip}]`).hostname.slice(1, -1);
+    const [first = 0, second = 0] = s.split(':').map((x) => parseInt(x || '0', 16));
     return (
-      !s.startsWith('::') &&
-      !s.startsWith('fc') &&
-      !s.startsWith('fd') &&
-      !/^fe[89ab]/.test(s) &&
-      !s.startsWith('ff') &&
-      !s.startsWith('2001:db8:')
+      first >= 0x2000 &&
+      first < 0x3fff &&
+      first !== 0x2002 &&
+      !(
+        first === 0x2001 &&
+        (second === 0 || second === 2 || second === 0xdb8 || (second >= 0x10 && second <= 0x2f))
+      )
     );
   }
-  const [a = 0, b = 0] = ip.split('.').map(Number);
+  const [a = 0, b = 0, c = 0] = ip.split('.').map(Number);
   return (
     a !== 0 &&
     a !== 10 &&
@@ -36,6 +40,10 @@ export function publicAddress(ip: string) {
     a !== 169 &&
     !(a === 172 && b >= 16 && b <= 31) &&
     !(a === 192 && [0, 168].includes(b)) &&
+    !(a === 192 && b === 88 && c === 99) &&
+    !(a === 198 && [18, 19].includes(b)) &&
+    !(a === 198 && b === 51 && c === 100) &&
+    !(a === 203 && b === 0 && c === 113) &&
     !(a === 100 && b >= 64 && b <= 127) &&
     a < 224
   );

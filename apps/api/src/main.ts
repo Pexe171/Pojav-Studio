@@ -45,6 +45,11 @@ class Errors implements ExceptionFilter {
             ? error.message
             : 'Requisição inválida';
     if (status === 500) console.error(error);
+    if (status === 429 && error instanceof HttpException) {
+      const detail = error.getResponse();
+      if (typeof detail === 'object' && detail && 'retryAfter' in detail)
+        res.setHeader('Retry-After', String(detail.retryAfter));
+    }
     res.status(status).json({ statusCode: status, message });
   }
 }
@@ -54,8 +59,12 @@ const app = await NestFactory.create(AppModule, {
   logger: ['error', 'warn', 'log'],
   bodyParser: false,
 });
-app.getHttpAdapter().getInstance().set('trust proxy', 1);
+app.getHttpAdapter().getInstance().set('trust proxy', 'loopback, linklocal, uniquelocal');
 app.use(helmet());
+app.use((_req: unknown, res: Response, next: () => void) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 app.use(jsonBody({ limit: '1mb' }));
 app.use(urlencoded({ extended: false, limit: '1mb' }));
 app.use(cookieParser());

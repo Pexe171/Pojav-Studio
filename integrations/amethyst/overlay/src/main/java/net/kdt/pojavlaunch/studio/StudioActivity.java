@@ -48,6 +48,7 @@ public final class StudioActivity extends Activity {
         status=text("Abrindo biblioteca local...",14,Color.rgb(180,166,223));status.setPadding(0,dp(12),0,dp(12));root.addView(status);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setVisibility(android.view.View.GONE);root.addView(progress);
         ScrollView scroll=new ScrollView(this);library=new LinearLayout(this);library.setOrientation(LinearLayout.VERTICAL);scroll.addView(library);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
+        LauncherUpdater.register(getApplication(),api);
         loadCache();render();refresh();Diagnostics.checkSavedCrash(this,api,jobs);
     }
     @Override protected void onResume(){super.onResume();if(installer==null)return;handler.removeCallbacks(periodic);handler.postDelayed(periodic,120000);jobs.execute(()->{try{if(installer.completePending())runOnUiThread(()->{installing=false;progress.setVisibility(android.view.View.GONE);status.setText("Instalação concluída. Disponível offline.");render();});}catch(Exception e){runOnUiThread(()->status.setText("Instalação do loader pendente: "+e.getMessage()));}});checkGameCrash();}

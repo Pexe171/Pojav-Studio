@@ -47,5 +47,22 @@ describe('integridade e destinos externos', () => {
     '::ffff:127.0.0.1',
     'fd00::1',
     'fe80::1',
+    '198.18.0.1',
+    '198.19.255.254',
+    '198.51.100.1',
+    '203.0.113.1',
+    '192.0.2.1',
+    '192.88.99.1',
+    '8.8.8.8.invalid',
+    '999.8.8.8',
+    '64:ff9b::a00:1',
+    '2002:7f00:1::',
+    '2001:0000:4136:e378::1',
+    '2001:db8::1',
+    '3fff::1',
   ])('nega endereço reservado %s', (ip) => expect(publicAddress(ip)).toBe(false));
+  it.each(['8.8.8.8', '1.1.1.1', '2001:4860:4860::8888', '2606:4700::1111'])(
+    'aceita endereço público %s',
+    (ip) => expect(publicAddress(ip)).toBe(true),
+  );
 });

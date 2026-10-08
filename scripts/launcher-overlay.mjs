@@ -18,8 +18,13 @@ export async function applyOverlay(root, config) {
   };
   await change(
     join(module, 'src/main/AndroidManifest.xml'),
+    '<uses-permission android:name="android.permission.INTERNET" />',
+    '<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
+  );
+  await change(
+    join(module, 'src/main/AndroidManifest.xml'),
     '<activity\n            android:name=".MissingStorageActivity"',
-    '<activity android:name=".studio.StudioActivity" android:exported="false" />\n        <activity\n            android:name=".MissingStorageActivity"',
+    `<provider android:name="androidx.core.content.FileProvider" android:authorities="${config.applicationId}.studio.updates" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/studio_update_paths" /></provider>\n        <activity android:name=".studio.StudioActivity" android:exported="false" />\n        <activity\n            android:name=".MissingStorageActivity"`,
   );
   await change(
     join(module, 'src/main/java/net/kdt/pojavlaunch/TestStorageActivity.java'),

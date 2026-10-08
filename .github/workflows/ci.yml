@@ -23,3 +23,8 @@ jobs:
       - run: npm run build
       - run: npm run typecheck
       - run: npm test
+      - name: Test concurrent launcher directories
+        run: |
+          mkdir -p "$RUNNER_TEMP/studio-directory-test"
+          javac -d "$RUNNER_TEMP/studio-directory-test" integrations/amethyst/overlay/src/main/java/net/kdt/pojavlaunch/studio/StudioFiles.java tests/StudioFilesTest.java
+          java -cp "$RUNNER_TEMP/studio-directory-test" net.kdt.pojavlaunch.studio.StudioFilesTest

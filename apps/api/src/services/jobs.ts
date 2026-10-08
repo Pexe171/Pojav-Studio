@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { providerSchema } from '@studio/core';
@@ -58,6 +59,29 @@ export async function getJob(id: string) {
 export async function cancelJob(id: string) {
   return db.job.update({ where: { id }, data: { cancelRequested: true } });
 }
+export async function retryJob(id: string) {
+  const job = await db.job.findUniqueOrThrow({ where: { id } });
+  if (job.kind === 'build' || job.status !== 'failed')
+    throw new ConflictException('Somente importações interrompidas podem ser retomadas');
+  const entry = await imports.getJob(id);
+  if (!entry || (await entry.getState()) !== 'failed')
+    throw new ConflictException('Importação não está disponível para retomar');
+  const updated = await db.job.updateMany({
+    where: { id, status: 'failed' },
+    data: { status: 'queued', error: null, cancelRequested: false },
+  });
+  if (!updated.count) throw new ConflictException('Importação já retomada');
+  try {
+    await entry.retry('failed');
+  } catch (error) {
+    await db.job.updateMany({
+      where: { id, status: 'queued' },
+      data: { status: 'failed', error: 'Não foi possível retomar a fila' },
+    });
+    throw error;
+  }
+  return getJob(id);
+}
 export async function reconcileJobs() {
   const pending = await db.job.findMany({ where: { status: { in: ['queued', 'processing'] } } });
   for (const job of pending) {
@@ -75,6 +99,22 @@ export async function reconcileJobs() {
           removeOnFail: 100,
         },
       );
+    else if ((await entry.getState()) === 'failed') {
+      // BullMQ can fail a stalled job without invoking the importer catch block.
+      await db.job.updateMany({
+        where: { id: job.id, status: { in: ['queued', 'processing'] } },
+        data: {
+          status: 'failed',
+          error: entry.failedReason || 'Processamento interrompido',
+          progress: json({
+            stage: 'failed',
+            completed: 0,
+            total: 0,
+            message: 'Importação interrompida. Tente novamente.',
+          }),
+        },
+      });
+    }
   }
 }
 export const uploadKey = (extension: string) => `uploads/${randomUUID()}${extension}`;

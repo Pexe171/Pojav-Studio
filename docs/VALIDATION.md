@@ -1,5 +1,7 @@
 # Validação — 8 de outubro de 2026
 
+Recuperação de importações: 77 testes passaram, incluindo reconciliação de jobs interrompidos pelo BullMQ, retomada concorrente e falha do Redis. O painel publicado mostrou as três importações pendentes em viewport de celular, sem erro JavaScript ou overflow. Duas entradas correspondem ao mesmo Prominence II; não foram excluídas. Seu conteúdo incorporado tem 593.191.194 bytes e excede o limite padrão de 512 MB. O aumento do limite está pendente de autorização do operador. Medieval MC retomou a extração dos 1.450 arquivos incorporados. A fila agora registra interrupções como falhas visíveis e permite retomada manual.
+
 APK 1.0.6 gerado pelo worker Android e baixado pelo domínio público com SHA-256 `52a6a46d269b61f016615bed19daac5485843e85cebd8f2cae294ec35f3c6ee3`. O endpoint público de versão informa versão instalada mínima 6. O launcher consulta silenciosamente ao abrir, retornar ao primeiro plano e a cada dois minutos enquanto está em primeiro plano. Quando a API informa uma versão obrigatória mais recente, apresenta a atualização; se a API falhar, permite continuar offline. É necessário instalar esta versão uma vez para ativar o mecanismo. Permissão de instalação e atualização no aparelho real ainda não foram verificadas.
 
 A revisão de segurança passou com 70 testes automatizados e uma integração isolada contra a API real. Detalhes, correções e limites estão em [SECURITY.md](SECURITY.md).

@@ -22,7 +22,14 @@ import { db, putObject, objectUrl } from './infra.js';
 import { login, logout } from './auth.js';
 import { providers } from './providers/registry.js';
 import { catalogCategories, searchCatalog, searchSchema } from './services/catalog.js';
-import { cancelJob, getJob, importRequest, queueImport, uploadKey } from './services/jobs.js';
+import {
+  cancelJob,
+  getJob,
+  importRequest,
+  queueImport,
+  retryJob,
+  uploadKey,
+} from './services/jobs.js';
 import * as projects from './services/projects.js';
 import { queueLauncherBuild } from './services/android.js';
 import {
@@ -123,6 +130,9 @@ export class ApiController {
   }
   @Post('jobs/:id/cancel') cancel(@Param('id') id: string) {
     return cancelJob(identifiers.parse(id));
+  }
+  @Post('jobs/:id/retry') retry(@Param('id') id: string) {
+    return retryJob(identifiers.parse(id));
   }
   @Post('jobs/:id/commit') commit(@Param('id') id: string, @Body() input: unknown) {
     return projects.commitImport(identifiers.parse(id), input);

@@ -17,6 +17,8 @@ if (process.env.WORKER_ROLE !== 'builds')
       {
         connection: redis,
         concurrency: 2,
+        lockDuration: 120000,
+        maxStalledCount: 3,
       },
     ),
   );

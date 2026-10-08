@@ -388,12 +388,28 @@ export async function processImport(jobId: string, retryOnFailure = false) {
       },
       prepared,
     );
+    let embeddedCount = 0;
     for (const file of bundle.files) {
       const bytes = parsed.embedded.get(file.path);
       if (bytes) {
         await checkCancelled(jobId);
-        file.storageKey = await putObject(`assets/${file.hashes.sha256}`, bytes);
+        const old = checkpoint.get(file.path);
+        file.storageKey =
+          old?.status === 'resolved' && old.storageKey && old.hashes.sha256 === file.hashes.sha256
+            ? old.storageKey
+            : await putObject(`assets/${file.hashes.sha256}`, bytes);
         file.status = 'resolved';
+        if (++embeddedCount % 50 === 0)
+          await progress(
+            jobId,
+            {
+              stage: 'configs',
+              completed: embeddedCount,
+              total: parsed.embedded.size,
+              message: `Extraindo arquivos ${embeddedCount}/${parsed.embedded.size}`,
+            },
+            prepared,
+          );
       }
     }
     await resolveReferences(parsed, jobId);

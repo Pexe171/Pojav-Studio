@@ -585,6 +585,26 @@ export function ImportReview() {
         <p>{progress.message}</p>
       </div>
       {(error || job.error) && <Notice>{error || job.error}</Notice>}
+      {job.status === 'failed' && job.kind !== 'build' && (
+        <button
+          className="primary"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setActionError('');
+            try {
+              await post(`/jobs/${id}/retry`);
+              window.location.reload();
+            } catch (e) {
+              setActionError((e as Error).message);
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? 'Retomando...' : 'Retomar importação'}
+        </button>
+      )}
+      {!ready && actionError && <Notice>{actionError}</Notice>}
       <div className="panel import-progress">
         <div className="progress-heading">
           <FileArchive size={25} />
@@ -775,6 +795,15 @@ export function ImportReview() {
 }
 export function Projects() {
   const projects = useResource<Project[]>('/projects');
+  const imports = useResource<Job[]>('/jobs');
+  useEffect(() => {
+    const timer = setInterval(imports.reload, 5000);
+    return () => clearInterval(timer);
+  }, [imports.reload]);
+  const pendingImports =
+    imports.data?.filter(
+      (job) => job.kind === 'prepare' && !['committed', 'cancelled'].includes(job.status),
+    ) ?? [];
   return (
     <>
       <div className="page-heading">
@@ -788,6 +817,30 @@ export function Projects() {
         </div>
       </div>
       {projects.error && <Notice>{projects.error}</Notice>}
+      {imports.error && <Notice>{imports.error}</Notice>}
+      {!!pendingImports.length && (
+        <section className="panel">
+          <h2>Importações</h2>
+          <p className="muted">
+            Quando a análise terminar, abra a importação e confirme para criar o projeto e publicar.
+          </p>
+          {pendingImports.map((job) => (
+            <Link className="project-card" key={job.id} to={`/imports/${job.id}`}>
+              <div>
+                <h3>{job.result?.bundle?.name ?? 'Modpack em análise'}</h3>
+                <p>{job.error || job.progress.message}</p>
+              </div>
+              <span className="status-pill">
+                {job.status === 'ready'
+                  ? 'Confirmar importação'
+                  : job.status === 'failed'
+                    ? 'Interrompido'
+                    : 'Processando'}
+              </span>
+            </Link>
+          ))}
+        </section>
+      )}
       {projects.loading ? (
         <Loading />
       ) : projects.data?.length ? (

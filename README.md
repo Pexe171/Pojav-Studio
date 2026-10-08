@@ -43,7 +43,7 @@ ANDROID_VALIDATED_TARGETS=[{"minecraft":"1.20.1","loader":"fabric","loaderVersio
 
 Essa lista é uma declaração do operador de que realizou o teste; não produz uma homologação automática. A publicação permanece bloqueada para combinações que não constam nela.
 
-O overlay em `integrations/amethyst/overlay` implementa biblioteca com capas persistidas, versões instaladas, atualização manual, instalação verificada em staging, rollback, cache do catálogo e controle de toque que detecta teclado físico. A conta Microsoft e a preparação dos arquivos do Minecraft continuam usando o launcher original. A biblioteca abre o perfil instalado no launcher original, onde o jogador inicia o jogo.
+O overlay em `integrations/amethyst/overlay` implementa biblioteca com capas persistidas, versões instaladas, atualização manual, instalação verificada em staging, rollback, cache do catálogo e controle de toque que detecta teclado físico. É possível criar um perfil local sem login Microsoft; esse perfil usa arquivos do jogo já instalados e não autentica em servidores que exigem conta original. A conta Microsoft e a preparação dos arquivos do Minecraft continuam usando o launcher original. A biblioteca abre o perfil instalado no launcher original, onde o jogador inicia o jogo.
 
 Erros oferecem uma prévia e perguntam antes do envio. O relatório usa `POST /api/v1/public/diagnostics`, exige `consent:true` e remove tokens, emails e caminhos pessoais. Logs podem conter outros dados: o jogador pode recusar. O painel mostra relatórios revisados/resolvidos, com retenção configurável, padrão 30 dias.
 

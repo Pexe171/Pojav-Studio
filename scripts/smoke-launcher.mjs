@@ -50,7 +50,10 @@ if (!response.ok) throw new Error('APK download failed ' + response.status);
 const bytes = Buffer.from(await response.arrayBuffer());
 const sha256 = createHash('sha256').update(bytes).digest('hex');
 if (sha256 !== job.result.sha256) throw new Error('APK SHA-256 mismatch');
-await writeFile('artifacts/pojav-studio-2.apk', bytes);
+const builds = await request('/launcher/builds');
+const build = builds.find((entry) => entry.id === job.result.buildId);
+if (!build) throw new Error('Completed build not found');
+await writeFile(`artifacts/pojav-studio-${build.versionCode}.apk`, bytes);
 console.log(
   'PASS: global APK build through API, BullMQ worker, download via Cloudflare and SHA-256 ' +
     sha256,

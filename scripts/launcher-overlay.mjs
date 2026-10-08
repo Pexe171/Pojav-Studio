@@ -27,6 +27,16 @@ export async function applyOverlay(root, config) {
     'new Intent(this, net.kdt.pojavlaunch.studio.StudioActivity.class)',
   );
   await change(
+    join(module, 'src/main/java/net/kdt/pojavlaunch/fragments/SelectAuthFragment.java'),
+    'mLocalButton.setOnClickListener(v -> hasNoOnlineProfileDialog(requireActivity(), () -> Tools.swapFragment(requireActivity(), LocalLoginFragment.class, LocalLoginFragment.TAG, null)));',
+    'mLocalButton.setOnClickListener(v -> Tools.swapFragment(requireActivity(), LocalLoginFragment.class, LocalLoginFragment.TAG, null));',
+  );
+  await change(
+    join(module, 'src/main/java/net/kdt/pojavlaunch/fragments/LocalLoginFragment.java'),
+    '        // This is overkill but meh\n        if (!hasOnlineProfile()){\n            Tools.swapFragment(requireActivity(), MainMenuFragment.class, MainMenuFragment.TAG, null);\n        }',
+    '        // Local profiles are independent of Microsoft sign-in.',
+  );
+  await change(
     join(module, 'src/main/java/net/kdt/pojavlaunch/tasks/MinecraftDownloader.java'),
     'private boolean isLocalProfile = false;',
     `private boolean isLocalProfile = false;
